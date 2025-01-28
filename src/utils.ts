@@ -6,7 +6,7 @@ import { password } from '@inquirer/prompts'
 async function addAccountFromKeystore(
   keystorePath: string,
   provider: providers.JsonRpcProvider
-): Promise<Wallet> {
+): Promise<Wallet | undefined> {
   // read the keystore file, confirming it exists
   const jsonKeystore = (await fs.readFile(keystorePath)).toString()
 
@@ -38,6 +38,7 @@ export async function configureMulticall(provider: providers.JsonRpcProvider, ch
     }
     // FIXME: can't monkeypatch because the ethcall provider is not exported
     // ???getMulticall = forceMulticall
+    // Link to error in ethcall: https://github.com/Destiner/ethcall/blob/d63d43a128a1afe1dadda860b8469cccc4353ede/src/provider.ts#L57
   }
 }
 
@@ -45,7 +46,7 @@ export async function delay(seconds: number) {
   return new Promise(res => setTimeout(res, seconds * 1000))
 }
 
-export function priceToNumber(price: BigNumber) {
+export function priceToNumber(price: BigNumber): number {
   return price.div(1e12).toNumber() / 1e6
 }
 

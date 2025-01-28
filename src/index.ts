@@ -3,7 +3,7 @@
 import yargs from 'yargs/yargs'
 
 import { AjnaSDK, Pool } from '@ajna-finance/sdk'
-import { configureAjna, readConfigFile } from './config'
+import { configureAjna, readConfigFile, KeeperConfig, PoolConfig, PriceOrigin, PriceOriginSource } from './config'
 import { getPrice as getPriceCoinGecko } from './coingecko'
 import { configureMulticall, delay, getProviderAndSigner, priceToNumber } from './utils'
 import { handleKicks } from './kick'
@@ -17,7 +17,7 @@ const DELAY_BETWEEN_LOANS = 1.5
 const DELAY_MAIN_LOOP = 15
 
 let pools: Map<string, Pool> = new Map()
-let config
+let config: KeeperConfig
 
 async function main() {
   config = await readConfigFile(argv.config)
@@ -35,7 +35,7 @@ async function main() {
   for(const pool of config.pools) {
     const name: string = pool.name ?? '(unnamed)'
     console.log('loading pool', name.padStart(18), 'at', pool.address)
-    pools[pool.address] = await ajna.fungiblePoolFactory.getPoolByAddress(pool.address);
+    pools.set(pool.address, await ajna.fungiblePoolFactory.getPoolByAddress(pool.address))
   }
 
   while (true) {
@@ -52,51 +52,54 @@ async function main() {
 }
 
 // Retrieves the market price using the configured source
-async function getPrice(poolAddress: string, priceConfig) {
-  let price
-  switch (priceConfig.source) {
-    case 'coingecko':
-      price = await getPriceCoinGecko(priceConfig.query, config.pricing.coinGeckoApiKey)
+async function getPrice(poolAddress: string, priceOrigin: PriceOrigin) {
+  let price: number;
+  switch (priceOrigin.source) {
+    case PriceOriginSource.COINGECKO:
+      price = await getPriceCoinGecko(priceOrigin.query, config.pricing.coinGeckoApiKey)
       break
-    case 'fixed':
-      price = priceConfig.value
+    case PriceOriginSource.FIXED:
+      price = priceOrigin.value
       break
-    case 'pool':
-      price = await getPoolPrice(poolAddress, priceConfig.reference)
+    case PriceOriginSource.POOL:
+      price = await getPoolPrice(poolAddress, priceOrigin.reference)
       break
     default:
-      throw new Error('Unknown price provider:' + priceConfig.provider)
+      throw new Error('Unknown price provider:' + (priceOrigin as any).source)
   }
-  if (priceConfig.invert) {
+  if (priceOrigin.invert) {
     return (price !== 0) ? 1 / price : 0
   } else {
     return price
   }
 }
 
-async function getPoolPrice(poolAddress: string, reference: string) {
-  const poolPrices = await pools[poolAddress].getPrices()
+async function getPoolPrice(poolAddress: string, reference: string): Promise<number> {
+  const poolPrices = await pools.get(poolAddress)?.getPrices()
   let price
   switch (reference) {
     case 'hpb':
-      price = poolPrices.hpb
+      price = poolPrices?.hpb
       break
     case 'htp':
-      price = poolPrices.htp
+      price = poolPrices?.htp
       break
     case 'lup':
-      price = poolPrices.lup
+      price = poolPrices?.lup
       break
     case 'llb':
-      price = poolPrices.llb
+      price = poolPrices?.llb
       break
     default:
       throw new Error('Unknown pool price reference:' + reference)
   }
+  if (price == undefined) {
+    throw new Error(`Unable to get price for ${poolAddress} - ${reference}`)
+  }
   return priceToNumber(price)
 }
 
-async function keepPool(poolConfig) {
+async function keepPool(poolConfig: PoolConfig) {
   let price: number
   if (poolConfig.price) {
     price = await getPrice(poolConfig.address, poolConfig.price)
@@ -105,7 +108,8 @@ async function keepPool(poolConfig) {
   }
   console.log(poolConfig.name, `${poolConfig.price.source} price`, price)
 
-  const pool = pools[poolConfig.address]
+  const pool = pools.get(poolConfig.address)
+  if (pool == undefined) throw new Error(`Cannot find pool for address: ${poolConfig.address}`)
   if (poolConfig.kick) handleKicks(pool, poolConfig, price, config.SUBGRAPH_URL, DELAY_BETWEEN_LOANS)
   // TODO: implement poolConfig.arbtake
 }
