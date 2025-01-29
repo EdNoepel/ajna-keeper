@@ -5,11 +5,11 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
     query {
       pool (id: "${poolAddress}") {
         lup
-        loans() {
-          borrower
-          inLiquidation
-          thresholdPrice
-        }
+      }
+      loans (where: {poolAddress: "${poolAddress}"}){
+        borrower
+        inLiquidation
+        thresholdPrice
       }
     }
   `
@@ -17,12 +17,13 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
   const result: {
     pool: {
       lup: number;
-      loans: {
-        borrower: string;
-        inLiquidation: boolean;
-        thresholdPrice: number;
-      }[] }
+    },
+    loans: {
+      borrower: string;
+      inLiquidation: boolean;
+      thresholdPrice: number;
+    }[] 
     }
     = await request(subgraphUrl, query)
-  return result.pool
+  return result
 }

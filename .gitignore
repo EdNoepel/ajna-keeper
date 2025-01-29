@@ -1,6 +1,9 @@
 # dependencies
 /node_modules
 
+# Hardhat
+/cache
+
 # misc
 .DS_Store
 config*.json

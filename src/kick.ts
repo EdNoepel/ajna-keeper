@@ -2,7 +2,6 @@ import { Address, Pool, Signer } from '@ajna-finance/sdk'
 import { getLoans } from './subgraph';
 import { delay, priceToNumber } from './utils';
 import { PoolConfig } from './config';
-import { Contract } from 'ethers';
 import { approveERC20 } from './erc20';
 
 const APPROVAL_AMOUNT_FACTOR = 1.10
@@ -16,7 +15,7 @@ export async function handleKicks(
   signer: Signer,
   dryRun: boolean,
 ) {
-  const {lup, loans} = await getLoans(subgraphUrl, pool.poolAddress)
+  const {pool: {lup}, loans} = await getLoans(subgraphUrl, pool.poolAddress)
   for(const loanFromSubgraph of loans) {
     const {borrower, inLiquidation, thresholdPrice} = loanFromSubgraph
     if (inLiquidation) continue

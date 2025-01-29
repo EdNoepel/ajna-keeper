@@ -25,7 +25,7 @@ When auction price drops a configurable percentage below the highest price bucke
 
 ## Installation and Prerequisites
 You'll need `node` and related tools (`npm`, `yarn`).  This was developed with node v18.20.x but should work with later versions.
-```
+```bash
 yarn --frozen-lockfile
 ```
 
@@ -38,9 +38,38 @@ yarn --frozen-lockfile
 If the price source only has quote token priced in collateral, you may add `"invert": true` to `price` config to invert the configured price.
 
 ## Execution
-```
+```bash
 yarn start --config my-config.json
 ```
+
+## Testing
+<!-- 
+TODO: Maybe just save the compiled contracts from AjnaCore if needed 
+
+### Add Ajna-Core
+Add submodules
+```bash
+git submodule update --init --recursive
+```
+
+### Foundry setup
+- Install Foundry [instructions](https://github.com/gakonst/foundry/blob/master/README.md#installation)
+- Install the [foundry](https://github.com/gakonst/foundry) toolchain installer (`foundryup`):
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+```
+- To get the latest `forge` binaries, run:
+```bash
+foundryup
+```
+
+### Build Ajna-Core
+```bash
+cd ajna-core
+forge b
+```
+-->
+
 
 ## Disclaimer
 User assumes all risk of data presented and transactions placed by this keeper.
