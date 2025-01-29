@@ -7,9 +7,10 @@ import { KeeperConfig } from './config'
 async function addAccountFromKeystore(
   keystorePath: string,
   provider: providers.JsonRpcProvider
-): Promise<Wallet | undefined> {
+): Promise<Wallet> {
   // TODO: connect actual wallet.
-  return Wallet.createRandom()
+  let wallet = Wallet.createRandom()
+  return wallet.connect(provider)
 
   // read the keystore file, confirming it exists
   const jsonKeystore = (await fs.readFile(keystorePath)).toString()
@@ -25,7 +26,6 @@ async function addAccountFromKeystore(
   } catch (error) {
     console.error('Error decrypting keystore:', error)
     console.error('This keeper will not create transactions')
-    return undefined
   }
 }
 

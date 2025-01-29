@@ -2,7 +2,7 @@
 
 import yargs from 'yargs/yargs'
 
-import { AjnaSDK, Pool } from '@ajna-finance/sdk'
+import { AjnaSDK, Pool, Signer } from '@ajna-finance/sdk'
 import { configureAjna, readConfigFile, KeeperConfig, PoolConfig, PriceOrigin, PriceOriginSource } from './config'
 import { getPrice as getPriceCoinGecko } from './coingecko'
 import { delay, getProviderAndSigner, overrideMulticall, priceToNumber } from './utils'
@@ -43,7 +43,7 @@ async function main() {
   while (true) {
     for(const pool of config.pools) {
       try {
-        keepPool(pool) // not awaiting here; we want these calls dispatched in parallel
+        keepPool(pool, signer) // not awaiting here; we want these calls dispatched in parallel
       } catch (error) {
         console.error(`Error keeping pool ${pool.address}:`, error)
       }
@@ -101,7 +101,7 @@ async function getPoolPrice(poolAddress: string, reference: string): Promise<num
   return priceToNumber(price)
 }
 
-async function keepPool(poolConfig: PoolConfig) {
+async function keepPool(poolConfig: PoolConfig, signer: Signer) {
   let price: number
   if (poolConfig.price) {
     price = await getPrice(poolConfig.address, poolConfig.price)
@@ -112,7 +112,7 @@ async function keepPool(poolConfig: PoolConfig) {
 
   const pool = pools.get(poolConfig.address)
   if (pool == undefined) throw new Error(`Cannot find pool for address: ${poolConfig.address}`)
-  if (poolConfig.kick) handleKicks(pool, poolConfig, price, config.SUBGRAPH_URL, DELAY_BETWEEN_LOANS)
+  if (poolConfig.kick) handleKicks(pool, poolConfig, price, config.SUBGRAPH_URL, DELAY_BETWEEN_LOANS, signer, !!config.dryRun)
   // TODO: implement poolConfig.arbtake
 }
 
