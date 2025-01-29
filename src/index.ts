@@ -5,7 +5,7 @@ import yargs from 'yargs/yargs'
 import { AjnaSDK, Pool } from '@ajna-finance/sdk'
 import { configureAjna, readConfigFile, KeeperConfig, PoolConfig, PriceOrigin, PriceOriginSource } from './config'
 import { getPrice as getPriceCoinGecko } from './coingecko'
-import { configureMulticall, delay, getProviderAndSigner, priceToNumber } from './utils'
+import { delay, getProviderAndSigner, overrideMulticall, priceToNumber } from './utils'
 import { handleKicks } from './kick'
 
 const argv = yargs(process.argv.slice(2)).options({
@@ -35,7 +35,9 @@ async function main() {
   for(const pool of config.pools) {
     const name: string = pool.name ?? '(unnamed)'
     console.log('loading pool', name.padStart(18), 'at', pool.address)
-    pools.set(pool.address, await ajna.fungiblePoolFactory.getPoolByAddress(pool.address))
+    const fungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(pool.address)
+    overrideMulticall(fungiblePool, config)
+    pools.set(pool.address, fungiblePool)
   }
 
   while (true) {

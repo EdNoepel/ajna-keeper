@@ -61,6 +61,9 @@ export interface PoolConfig {
 
 export interface KeeperConfig {
   ajna: AjnaConfigParams;
+  dry_run?: boolean;
+  multicallAddress?: string;
+  multicallBlock?: number;
   ETH_RPC_URL: string;
   SUBGRAPH_URL: string;
   KEEPER_KEYSTORE: string;

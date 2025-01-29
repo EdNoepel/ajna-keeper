@@ -1,12 +1,16 @@
 import { BigNumber, providers, Wallet } from 'ethers'
 import { promises as fs } from 'fs'
 import { password } from '@inquirer/prompts'
-// import { getMulticall } from 'ethcall'
+import { FungiblePool } from '@ajna-finance/sdk'
+import { KeeperConfig } from './config'
 
 async function addAccountFromKeystore(
   keystorePath: string,
   provider: providers.JsonRpcProvider
 ): Promise<Wallet | undefined> {
+  // TODO: connect actual wallet.
+  return Wallet.createRandom()
+
   // read the keystore file, confirming it exists
   const jsonKeystore = (await fs.readFile(keystorePath)).toString()
 
@@ -25,20 +29,12 @@ async function addAccountFromKeystore(
   }
 }
 
-// Monkeypatch ethcall's multicall for chains unsupported by the ethcall compatible with AjnaSDK
-export async function configureMulticall(provider: providers.JsonRpcProvider, chainConfig) {
-  if ('multicallAddress' in chainConfig && 'multicallBlock' in chainConfig) {
-    const chainId = (await provider.getNetwork()).chainId
-    console.log('forcing multicall for chain', chainId, 'to', chainConfig.multicallAddress)
-    const forceMulticall = (chainId: number) => {
-      return {
-        address: chainConfig.multicallAddress,
-        block: chainConfig.multicallBlock,
-      }
+export function overrideMulticall(fungiblePool: FungiblePool, chainConfig: KeeperConfig): void {
+  if (chainConfig?.multicallAddress && chainConfig?.multicallBlock != undefined) {
+    fungiblePool.ethcallProvider.multicall3 = {
+      address: chainConfig.multicallAddress,
+      block: chainConfig.multicallBlock
     }
-    // FIXME: can't monkeypatch because the ethcall provider is not exported
-    // ???getMulticall = forceMulticall
-    // Link to error in ethcall: https://github.com/Destiner/ethcall/blob/d63d43a128a1afe1dadda860b8469cccc4353ede/src/provider.ts#L57
   }
 }
 
