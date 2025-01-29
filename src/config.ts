@@ -2,7 +2,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import { Config, Address } from '@ajna-finance/sdk'
 
-interface AjnaConfigParams {
+export interface AjnaConfigParams {
   erc20PoolFactory: Address;
   erc721PoolFactory: Address;
   poolUtils: Address;
@@ -23,8 +23,11 @@ export enum PriceOriginSource {
   POOL = "pool",
 }
 
-enum PriceOriginPoolReference {
-  LUP = "lup"
+export enum PriceOriginPoolReference {
+  HPB = "hpb",
+  HTP = "htp",
+  LUP = "lup",
+  LLB = "llb",
 }
 
 interface PriceOriginFixed {

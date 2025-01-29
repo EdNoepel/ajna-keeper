@@ -1,7 +1,8 @@
-import { PriceOrigin, PriceOriginSource } from './config'
+import { PriceOrigin, PriceOriginPoolReference, PriceOriginSource } from './config'
 import { getPrice as getPriceCoinGecko } from './coingecko'
 import { priceToNumber } from './utils'
 import { KeeperContext } from './run';
+import { Pool } from '@ajna-finance/sdk';
 
 // Retrieves the market price using the configured source
 export async function getPrice(poolAddress: string, priceOrigin: PriceOrigin, coinGeckoApiKey: string = "", pools: KeeperContext["pools"]) {
@@ -14,7 +15,7 @@ export async function getPrice(poolAddress: string, priceOrigin: PriceOrigin, co
       price = priceOrigin.value;
       break;
     case PriceOriginSource.POOL:
-      price = await getPoolPrice(poolAddress, priceOrigin.reference, pools);
+      price = await getPoolPrice(pools.get(poolAddress)!, priceOrigin.reference);
       break;
     default:
       throw new Error('Unknown price provider:' + (priceOrigin as any).source);
@@ -26,27 +27,27 @@ export async function getPrice(poolAddress: string, priceOrigin: PriceOrigin, co
   }
 }
 
-async function getPoolPrice(poolAddress: string, reference: string, pools: KeeperContext["pools"]): Promise<number> {
-  const poolPrices = await pools.get(poolAddress)?.getPrices();
+export async function getPoolPrice(pool: Pool, reference: PriceOriginPoolReference): Promise<number> {
+  const poolPrices = await pool.getPrices();
   let price;
   switch (reference) {
-    case 'hpb':
+    case PriceOriginPoolReference.HPB:
       price = poolPrices?.hpb;
       break;
-    case 'htp':
+    case PriceOriginPoolReference.HTP:
       price = poolPrices?.htp;
       break;
-    case 'lup':
+    case PriceOriginPoolReference.LUP:
       price = poolPrices?.lup;
       break;
-    case 'llb':
+    case PriceOriginPoolReference.LLB:
       price = poolPrices?.llb;
       break;
     default:
       throw new Error('Unknown pool price reference:' + reference);
   }
   if (price == undefined) {
-    throw new Error(`Unable to get price for ${poolAddress} - ${reference}`);
+    throw new Error(`Unable to get price for ${pool.poolAddress} - ${reference}`);
   }
   return priceToNumber(price);
 }

@@ -43,32 +43,16 @@ yarn start --config my-config.json
 ```
 
 ## Testing
-<!-- 
-TODO: Maybe just save the compiled contracts from AjnaCore if needed 
 
-### Add Ajna-Core
-Add submodules
+### Running tests
+In one terminal run:
 ```bash
-git submodule update --init --recursive
+npx hardhat node
 ```
-
-### Foundry setup
-- Install Foundry [instructions](https://github.com/gakonst/foundry/blob/master/README.md#installation)
-- Install the [foundry](https://github.com/gakonst/foundry) toolchain installer (`foundryup`):
+In a second terminal run:
 ```bash
-curl -L https://foundry.paradigm.xyz | bash
+npx hardhat test
 ```
-- To get the latest `forge` binaries, run:
-```bash
-foundryup
-```
-
-### Build Ajna-Core
-```bash
-cd ajna-core
-forge b
-```
--->
 
 
 ## Disclaimer

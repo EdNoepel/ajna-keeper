@@ -1,9 +1,10 @@
 /** @type import('hardhat/config').HardhatUserConfig */
 require('dotenv').config()
+
 module.exports = {
-  solidity: "0.8.28",
+  solidity: '0.8.28',
   paths: {
-    tests: "./src/test"
+    tests: './src/test'
   },
   networks: {
     hardhat: {
