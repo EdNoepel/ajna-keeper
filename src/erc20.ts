@@ -1,4 +1,4 @@
-import { Signer } from "@ajna-finance/sdk";
+import { Signer, SignerOrProvider } from "@ajna-finance/sdk";
 import { BigNumber, Contract, ContractReceipt, ContractTransaction, providers } from 'ethers';
 
 export const ERC20_ABI = [
@@ -23,4 +23,13 @@ export async function approveErc20(
     const contract = new Contract(tokenAddress, ERC20_ABI, signer);
     const contractTx: ContractTransaction = await contract.approve(spenderAddress, amount);
     return await contractTx.wait();
+}
+
+export async function getDecimalsErc20(
+  provider: providers.JsonRpcProvider,
+  tokenAddress: string
+) {
+  const contract = new Contract(tokenAddress, ERC20_ABI, provider);
+  const decimals = await contract.decimals();
+  return decimals; 
 }

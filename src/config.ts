@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import { Config, Address } from '@ajna-finance/sdk'
+import { FeeAmount } from '@uniswap/v3-sdk';
 
 export interface AjnaConfigParams {
   erc20PoolFactory: Address;
@@ -59,6 +60,10 @@ interface TakeSettings {
   priceFactor: number;
 }
 
+interface DexConfig {
+  fee: FeeAmount;
+}
+
 export interface PoolConfig {
   name: string;
   address: Address;
@@ -66,6 +71,7 @@ export interface PoolConfig {
   "price-disabled": PriceOrigin;
   kick?: KickSettings;
   take?: TakeSettings;
+  dexSettings?: DexConfig;  // Only set this value if you want winnings sent to dex and traded for L2 token.
 }
 
 export interface KeeperConfig {
