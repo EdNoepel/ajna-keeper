@@ -1,9 +1,5 @@
 import { providers } from 'ethers';
-// import hhconfig from '../../hardhat.config';
-
-import {LOCAL_MAIN_NET_CONFIG} from './test-config';
-
-export const HARDHAT_RPC_URL = 'http://127.0.0.1:8545';
+import { HARDHAT_RPC_URL } from './test-config';
 
 export const getProvider = () => (new providers.JsonRpcProvider(HARDHAT_RPC_URL));
 
@@ -20,10 +16,6 @@ export const setBalance = (address: string, balance: string) => (getProvider().s
 export const getBalance = (address: string) => (getProvider().send('eth_getBalance', [address]));
 
 export const impersonateAccount = (address: string) => (getProvider().send('hardhat_impersonateAccount', [address]));
-
-// export const getWeth = async (address: string) => {
-//   const signer = await ethers.getImpersonatedSigner(WETH_WHALE_ADDRESS);
-// }
 
 export const getImpersonatedSigner = async (address: string) => {
   await impersonateAccount(address);

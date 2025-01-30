@@ -39,16 +39,20 @@ export function overrideMulticall(fungiblePool: FungiblePool, chainConfig: Keepe
 }
 
 export async function delay(seconds: number) {
-  return new Promise(res => setTimeout(res, seconds * 1000))
+  return new Promise(res => setTimeout(res, seconds * 1000));
 }
 
-export function priceToNumber(price: BigNumber): number {
-  return price.div(1e12).toNumber() / 1e6
+export function bigNumberToWad(price: BigNumber): number {
+  return price.div(1e12).toNumber() / 1e6;
+}
+
+export function wadToBigNumber(price: number): BigNumber {
+  return BigNumber.from(price * 1e6).mul(1e12);
 }
 
 export async function getProviderAndSigner(keystorePath: string, rpcUrl: string) {
-  const provider = new providers.JsonRpcProvider(rpcUrl)
-  const signer = await addAccountFromKeystore(keystorePath, provider)
+  const provider = new providers.JsonRpcProvider(rpcUrl);
+  const signer = await addAccountFromKeystore(keystorePath, provider);
 
-  return { provider, signer }
+  return { provider, signer };
 }

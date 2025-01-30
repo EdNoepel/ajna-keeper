@@ -1,6 +1,6 @@
 import { Address, Pool, Signer } from '@ajna-finance/sdk'
 import { getLoans } from './subgraph';
-import { delay, priceToNumber } from './utils';
+import { delay, bigNumberToWad, wadToBigNumber } from './utils';
 import { PoolConfig } from './config';
 import { approveErc20 } from './erc20';
 
@@ -23,42 +23,32 @@ export async function handleKicks(
 
     const loanFromSDK = await pool.getLoan(borrower)
     const {neutralPrice, liquidationBond} = loanFromSDK
-    const debt = priceToNumber(loanFromSDK.debt)
+    const debt = bigNumberToWad(loanFromSDK.debt)
 
     // if loan debt is lower than configured fixed value (denominated in quote token), skip it
-    if (debt < poolConfig.kick.minDebt) continue
+    if (debt < poolConfig.kick!.minDebt) continue
 
     // if threshold price below this, kick if not already under liquidation
-    const comparisonPrice = price * poolConfig.kick.priceFactor
+    const comparisonPrice = price * poolConfig.kick!.priceFactor
 
     // TODO: Make sure that user has enough QT to fund Liquidation Bond. 
     //    Note: If two kicks happen simultaneously, make sure they do not overdraft.
     if (price < comparisonPrice) {
       if (!dryRun) {
-        await kick(signer, pool, borrower, priceToNumber(liquidationBond));
+        console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}, thresholdPrice: ${thresholdPrice}, debt: ${debt}, feedPrice: ${price}`);
+        await kick(signer, pool, borrower, bigNumberToWad(liquidationBond));
       }else {
-        console.debug('DryRun - would kick loan', poolConfig.name, 'loan', borrower,
-          'with threshold price', thresholdPrice,
-          'and debt', debt,
-          'and feed price',
-        )
+        console.log(`DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}, thresholdPrice: ${thresholdPrice}, debt: ${debt}, feedPrice: ${price}`);
       }
-    } else {
-      console.debug(poolConfig.name, 'loan', borrower,
-        'with threshold price', thresholdPrice,
-        'and debt', debt,
-        'and feed price',
-      )
     }
 
     await delay(delayBetweenLoans);
   }
 }
 
-
 export async function kick(signer: Signer, pool: Pool, borrower: Address, liquidationBond: number) {
   try {
-    await approveErc20(signer, pool.quoteAddress, pool.poolAddress, liquidationBond * APPROVAL_AMOUNT_FACTOR)
+    await approveErc20(signer, pool.quoteAddress, pool.poolAddress, wadToBigNumber(liquidationBond * APPROVAL_AMOUNT_FACTOR));
     const wrappedTransaction = await pool.kick(signer, borrower);  // TODO: Add limitIndex?
     console.log(`Kicking loan for borrower ${borrower}`);
     const tx = await wrappedTransaction.submit();

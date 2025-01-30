@@ -1,7 +1,7 @@
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import {Signer} from '@ajna-finance/sdk';
 // import { approveErc20 } from '../erc20';
-import { priceToNumber } from '../utils';
+import { bigNumberToWad } from '../utils';
 import { approveErc20 } from '../erc20';
 import { resetHardhat, getImpersonatedSigner, setBalance } from './test-utils';
 import {LOCAL_MAIN_NET_CONFIG} from './test-config';
@@ -19,7 +19,6 @@ export async function getErc20Allowance(
   owner: string,
   spender: string,
 ): Promise<BigNumber> {
-  // Failing with error "Calling an account which is not a contract"
   const contract = new Contract(tokenAddress, WETH_ABI, signer);
   return await contract.allowance(owner, spender)
 }

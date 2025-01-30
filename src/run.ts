@@ -2,6 +2,7 @@ import { AjnaSDK, Pool, Signer } from '@ajna-finance/sdk'
 import { configureAjna, KeeperConfig, PoolConfig } from './config'
 import { delay, getProviderAndSigner, overrideMulticall } from './utils'
 import { handleKicks } from './kick'
+import { handleArbTakes } from './take'
 import {getPrice} from './price';
 
 export interface KeeperContext {
@@ -20,8 +21,6 @@ export async function startKeeperFromConfig(config: KeeperConfig) {
   }
   const { provider, signer } = await getProviderAndSigner(config.KEEPER_KEYSTORE, config.ETH_RPC_URL);
   configureAjna(config.ajna);
-  // FIXME: failed attempt to hack around "Multicall contract is not available on this network" warnings
-  // await configureMulticall(provider, config.chain)
   const ajna = new AjnaSDK(provider);
 
   console.log('...and pools:');
@@ -58,5 +57,5 @@ async function keepPool(poolConfig: PoolConfig, signer: Signer, keeperCtx: Keepe
   const pool = keeperCtx.pools.get(poolConfig.address);
   if (pool == undefined) throw new Error(`Cannot find pool for address: ${poolConfig.address}`);
   if (poolConfig.kick) handleKicks(pool, poolConfig, price, keeperCtx.config.SUBGRAPH_URL, DELAY_BETWEEN_LOANS, signer, !!keeperCtx.config.dryRun);
-  // TODO: implement poolConfig.arbtake
+  if (poolConfig.take) handleArbTakes(pool, poolConfig, keeperCtx.config.SUBGRAPH_URL, DELAY_BETWEEN_LOANS, signer, !!keeperCtx.config.dryRun);
 }

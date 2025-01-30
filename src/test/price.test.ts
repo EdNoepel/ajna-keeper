@@ -3,8 +3,8 @@ import { expect } from 'chai';
 import { providers } from 'ethers';
 import { configureAjna, PriceOriginPoolReference } from '../config';
 import { getPoolPrice } from '../price';
-import { getProvider, HARDHAT_RPC_URL, resetHardhat} from './test-utils';
-import {LOCAL_MAIN_NET_CONFIG} from './test-config';
+import { getProvider, resetHardhat} from './test-utils';
+import { LOCAL_MAIN_NET_CONFIG } from './test-config';
 
 
 describe('getPoolPrice', () => {

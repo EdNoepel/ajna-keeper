@@ -50,7 +50,12 @@ export type PriceOrigin = (PriceOriginFixed | PriceOriginCoinGecko | PriceOrigin
 };
 
 interface KickSettings {
-  minDebt: number;
+  minDebt: number;  // The minimum amount of debt in wad to kick a loan.
+  priceFactor: number; 
+}
+
+interface TakeSettings {
+  minCollateral: number;
   priceFactor: number;
 }
 
@@ -59,7 +64,8 @@ export interface PoolConfig {
   address: Address;
   price: PriceOrigin;
   "price-disabled": PriceOrigin;
-  kick: KickSettings;
+  kick?: KickSettings;
+  take?: TakeSettings;
 }
 
 export interface KeeperConfig {
