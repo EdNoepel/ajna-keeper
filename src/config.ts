@@ -52,7 +52,8 @@ export type PriceOrigin = (PriceOriginFixed | PriceOriginCoinGecko | PriceOrigin
 
 interface KickSettings {
   minDebt: number;  // The minimum amount of debt in wad to kick a loan.
-  priceFactor: number; 
+  // TODO: Assert priceFactor is less than one.
+  priceFactor: number; // Once the loan price
 }
 
 interface TakeSettings {

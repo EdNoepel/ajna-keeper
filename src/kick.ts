@@ -18,22 +18,25 @@ export async function handleKicks(
   const {pool: {lup}, loans} = await getLoans(subgraphUrl, pool.poolAddress)
   for(const loanFromSubgraph of loans) {
     const {borrower, inLiquidation, thresholdPrice} = loanFromSubgraph
+
+    // Cannot kick bonds which are already being liquidated.
     if (inLiquidation) continue
+
+    // If TP is lower than lup, the bond can not be kicked.
     if (thresholdPrice > lup) continue
 
-    const loanFromSDK = await pool.getLoan(borrower)
-    const {neutralPrice, liquidationBond} = loanFromSDK
-    const debt = bigNumberToWad(loanFromSDK.debt)
+    const {neutralPrice, liquidationBond, debt: debtBigNumber} = await pool.getLoan(borrower)
+    const debt = bigNumberToWad(debtBigNumber)
 
     // if loan debt is lower than configured fixed value (denominated in quote token), skip it
     if (debt < poolConfig.kick!.minDebt) continue
 
-    // if threshold price below this, kick if not already under liquidation
-    const comparisonPrice = price * poolConfig.kick!.priceFactor
+    // Only kick bonds which are lower than the price * priceFactor to ensure that they are profitable.
+    const shouldBeProfitable = thresholdPrice < price * poolConfig.kick!.priceFactor;
 
     // TODO: Make sure that user has enough QT to fund Liquidation Bond. 
     //    Note: If two kicks happen simultaneously, make sure they do not overdraft.
-    if (price < comparisonPrice) {
+    if (shouldBeProfitable) {
       if (!dryRun) {
         console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}, thresholdPrice: ${thresholdPrice}, debt: ${debt}, feedPrice: ${price}`);
         await kick(signer, pool, borrower, bigNumberToWad(liquidationBond));

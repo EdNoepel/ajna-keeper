@@ -23,6 +23,7 @@ export async function handleArbTakes(
       if (dryRun) {
         console.log(`DryRun - would ArbTake - poolAddress: ${pool.poolAddress}, borrower: ${borrower}, currentPrice: ${currentPrice}, hpb: ${hpb}`);
       } else {
+        // TODO: should we loop through this step until collateral remaining is zero?
         console.log(`ArbTaking - poolAddress: ${pool.poolAddress}, borrower: ${borrower}, currentPrice: ${currentPrice}, hpb: ${hpb}`);
         const liquidationSdk = pool.getLiquidation(borrower);
         await liquidationSdk.arbTake(signer, hpbIndex);
