@@ -1,7 +1,7 @@
 import { Signer } from "@ajna-finance/sdk";
-import { Contract, ContractTransaction } from 'ethers';
+import { BigNumber, Contract, ContractReceipt, ContractTransaction, providers } from 'ethers';
 
-const abi = [
+export const ERC20_ABI = [
     'function name() public view returns (string)',
     'function symbol() public view returns (string)',
     'function decimals() public view returns (uint8)',
@@ -13,14 +13,14 @@ const abi = [
     'function allowance(address _owner, address _spender) public view returns (uint256 remaining)',
 ];
 
-
-export async function approveERC20(
+export async function approveErc20(
     signer: Signer,
     tokenAddress: string,
     spenderAddress: string,
-    amount: number,
-): Promise<ContractTransaction> {
+    amount: BigNumber,
+): Promise<ContractReceipt> {
     console.log(`Approving funds transfer token address:${tokenAddress} spender address:${spenderAddress} amount:${amount}`)
-    const contract = new Contract(tokenAddress, abi, signer);
-    return await contract.approve(spenderAddress, amount);
+    const contract = new Contract(tokenAddress, ERC20_ABI, signer);
+    const contractTx: ContractTransaction = await contract.approve(spenderAddress, amount);
+    return await contractTx.wait();
 }

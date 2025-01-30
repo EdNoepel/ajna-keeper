@@ -1,17 +1,32 @@
-import { AjnaConfigParams } from "../config";
+import { providers } from 'ethers';
+// import hhconfig from '../../hardhat.config';
+
+import {LOCAL_MAIN_NET_CONFIG} from './test-config';
 
 export const HARDHAT_RPC_URL = 'http://127.0.0.1:8545';
 
-export const LOCAL_MAIN_NET_CONFIG = {
-  AJNA_CONFIG: {
-    'erc20PoolFactory': '0x6146DD43C5622bB6D12A5240ab9CF4de14eDC625',
-    'erc721PoolFactory': '0x27461199d3b7381De66a85D685828E967E35AF4c',
-    'poolUtils': '0x30c5eF2997d6a882DE52c4ec01B6D0a5e5B4fAAE',
-    'positionManager': '0x87B0F458d8F1ACD28A83A748bFFbE24bD6B701B1',
-    'ajnaToken': '0x9a96ec9B57Fb64FbC60B423d1f4da7691Bd35079',
-    'grantFund': '',
-    'burnWrapper': '',
-    'lenderHelper': '',
-  } as AjnaConfigParams,
-  WSTETH_ETH_POOL_ADDRESS: "0x3ba6a019ed5541b5f5555d8593080042cf3ae5f4"
+export const getProvider = () => (new providers.JsonRpcProvider(HARDHAT_RPC_URL));
+
+export const resetHardhat = () => (getProvider().send('hardhat_reset', [{
+      forking: {
+        jsonRpcUrl: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 21731352
+      },
+    }],
+  ));
+
+export const setBalance = (address: string, balance: string) => (getProvider().send('hardhat_setBalance', [address, balance]));
+
+export const getBalance = (address: string) => (getProvider().send('eth_getBalance', [address]));
+
+export const impersonateAccount = (address: string) => (getProvider().send('hardhat_impersonateAccount', [address]));
+
+// export const getWeth = async (address: string) => {
+//   const signer = await ethers.getImpersonatedSigner(WETH_WHALE_ADDRESS);
+// }
+
+export const getImpersonatedSigner = async (address: string) => {
+  await impersonateAccount(address);
+  const provider = getProvider();
+  return provider.getSigner(address);
 }

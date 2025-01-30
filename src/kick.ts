@@ -2,7 +2,7 @@ import { Address, Pool, Signer } from '@ajna-finance/sdk'
 import { getLoans } from './subgraph';
 import { delay, priceToNumber } from './utils';
 import { PoolConfig } from './config';
-import { approveERC20 } from './erc20';
+import { approveErc20 } from './erc20';
 
 const APPROVAL_AMOUNT_FACTOR = 1.10
 
@@ -58,7 +58,7 @@ export async function handleKicks(
 
 export async function kick(signer: Signer, pool: Pool, borrower: Address, liquidationBond: number) {
   try {
-    await approveERC20(signer, pool.quoteAddress, pool.poolAddress, liquidationBond * APPROVAL_AMOUNT_FACTOR)
+    await approveErc20(signer, pool.quoteAddress, pool.poolAddress, liquidationBond * APPROVAL_AMOUNT_FACTOR)
     const wrappedTransaction = await pool.kick(signer, borrower);  // TODO: Add limitIndex?
     console.log(`Kicking loan for borrower ${borrower}`);
     const tx = await wrappedTransaction.submit();
