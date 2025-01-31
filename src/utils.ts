@@ -42,12 +42,12 @@ export async function delay(seconds: number) {
   return new Promise(res => setTimeout(res, seconds * 1000));
 }
 
-export function bigNumberToWad(price: BigNumber): number {
-  return price.div(1e12).toNumber() / 1e6;
+export function wadToNumber(wad: BigNumber): number {
+  return wad.div(1e12).toNumber() / 1e6;
 }
 
-export function wadToBigNumber(price: number): BigNumber {
-  return BigNumber.from(price * 1e6).mul(1e12);
+export function numberToWad(dec: number): BigNumber {
+  return BigNumber.from(dec * 1e6).mul(1e12);
 }
 
 export async function getProviderAndSigner(keystorePath: string, rpcUrl: string) {

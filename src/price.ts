@@ -1,6 +1,6 @@
 import { PriceOrigin, PriceOriginPoolReference, PriceOriginSource } from './config'
 import { getPrice as getPriceCoinGecko } from './coingecko'
-import { bigNumberToWad } from './utils'
+import { wadToNumber } from './utils'
 import { KeeperContext } from './run';
 import { Pool } from '@ajna-finance/sdk';
 
@@ -49,17 +49,17 @@ export async function getPoolPrice(pool: Pool, reference: PriceOriginPoolReferen
   if (price == undefined) {
     throw new Error(`Unable to get price for ${pool.poolAddress} - ${reference}`);
   }
-  return bigNumberToWad(price);
+  return wadToNumber(price);
 }
 
 // function bucketToPrice(index: number) {
 //   // Note: Bucket index range is [-3232, 4155]
-//   return 1.005 ^ (index)
+//   return 1.005 ^ (index);
 // }
 
-// function priceToBucket(price: number) {
-//   return Math.log(price) / Math.log(1.005)
-// }
+export function priceToBucket(price: number) {
+  return Math.round(Math.log(price) / Math.log(1.005));
+}
 
 
 const HALVING_DURATIONS: number[] = [

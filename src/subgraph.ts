@@ -6,9 +6,8 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
       pool (id: "${poolAddress}") {
         lup
       }
-      loans (where: {poolAddress: "${poolAddress}"}){
+      loans (where: {inLiquidation: false, poolAddress: "${poolAddress}"}){
         borrower
-        inLiquidation
         thresholdPrice
       }
     }
@@ -20,7 +19,6 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
     },
     loans: {
       borrower: string;
-      inLiquidation: boolean;
       thresholdPrice: number;
     }[] 
   } = await request(subgraphUrl, query);
