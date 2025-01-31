@@ -5,6 +5,7 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
     query {
       pool (id: "${poolAddress}") {
         lup
+        hpb
       }
       loans (where: {inLiquidation: false, poolAddress: "${poolAddress}"}){
         borrower
@@ -16,6 +17,7 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
   const result: {
     pool: {
       lup: number;
+      hpb: number;
     },
     loans: {
       borrower: string;

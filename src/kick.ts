@@ -27,27 +27,31 @@ export async function handleKicks(handleKickParams: {
     dryRun
   } = handleKickParams;
 
-  const {pool: {lup}, loans} = await getLoans(subgraphUrl, pool.poolAddress)
+  const {pool: {lup, hpb}, loans} = await getLoans(subgraphUrl, pool.poolAddress)
   for(const loanFromSubgraph of loans) {
     const {borrower, thresholdPrice} = loanFromSubgraph
 
     // If TP is lower than lup, the bond can not be kicked.
-    if (thresholdPrice >= lup) continue
+    if (thresholdPrice < lup) continue
 
     const {neutralPrice, liquidationBond, debt} = await pool.getLoan(borrower)
 
     // if loan debt is lower than configured fixed value (denominated in quote token), skip it
     if (wadToNumber(debt) < poolConfig.kick!.minDebt) continue
 
-    // Only kick bonds which are lower than the price * priceFactor to ensure that they are profitable.
-    const shouldBeProfitable = wadToNumber(neutralPrice) * poolConfig.kick!.priceFactor > price;
+    // Only kick loans with a neutralPrice above price (with some margin) to ensure they are profitable.
+    const isNpAbovePrice = wadToNumber(neutralPrice) * poolConfig.kick!.priceFactor > price;
+
+    // Only kick loans with a neutralPrice above hpb to ensure they are profitalbe.
+    const isNpAboveHpb = wadToNumber(neutralPrice) > hpb;
+    const shouldBeProfitable = isNpAbovePrice && isNpAboveHpb;
 
     if (shouldBeProfitable) {
       if (!dryRun) {
-        console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}, TP: ${thresholdPrice}, feedPrice: ${price}`);
+        console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}, NP: ${neutralPrice}, feedPrice: ${price}`);
         await kick(signer, pool, borrower, price, liquidationBond);
       }else {
-        console.debug(`DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}, TP: ${thresholdPrice}, feedPrice: ${price}`);
+        console.debug(`DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}, NP: ${neutralPrice}, feedPrice: ${price}`);
       }
     }
 
