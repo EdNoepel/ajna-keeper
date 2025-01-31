@@ -1,6 +1,6 @@
 import { PriceOrigin, PriceOriginPoolReference, PriceOriginSource } from './config'
 import { getPrice as getPriceCoinGecko } from './coingecko'
-import { wadToNumber } from './utils'
+import { wadToNumber, numberToWad } from './utils'
 import { Pool } from '@ajna-finance/sdk';
 
 // Retrieves the market price using the configured source
@@ -56,8 +56,9 @@ export async function getPoolPrice(pool: Pool, reference: PriceOriginPoolReferen
 //   return 1.005 ^ (index);
 // }
 
-export function priceToBucket(price: number) {
-  return Math.round(Math.log(price) / Math.log(1.005));
+export function priceToBucket(price: number, pool: Pool): number {
+  return pool.getBucketsByPriceRange(numberToWad(price), numberToWad(price))[0].index;
+  // return Math.round(Math.log(price) / Math.log(1.005));
 }
 
 

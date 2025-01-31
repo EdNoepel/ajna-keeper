@@ -1,4 +1,4 @@
-import { Address, Pool, Signer } from '@ajna-finance/sdk'
+import { Address, FungiblePool, Pool, Signer } from '@ajna-finance/sdk'
 import { getLoans } from './subgraph';
 import { delay, wadToNumber } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
@@ -7,7 +7,7 @@ import { BigNumber } from 'ethers';
 import { priceToBucket } from './price';
 
 export async function handleKicks(handleKickParams: {
-  pool: Pool,
+  pool: FungiblePool,
   poolConfig: PoolConfig,
   price: number,
   signer: Signer,
@@ -57,7 +57,7 @@ export async function handleKicks(handleKickParams: {
   }
 }
 
-export async function kick(signer: Signer, pool: Pool, borrower: Address, limitPrice: number, liquidationBond: BigNumber) {
+export async function kick(signer: Signer, pool: FungiblePool, borrower: Address, limitPrice: number, liquidationBond: BigNumber) {
   try {
     const collateralBalance = await getBalanceOfErc20(signer, pool.collateralAddress);
     if (collateralBalance < liquidationBond) {
@@ -67,7 +67,8 @@ export async function kick(signer: Signer, pool: Pool, borrower: Address, limitP
     console.log(`Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}`);
     await approveErc20(signer, pool.quoteAddress, pool.poolAddress, liquidationBond);
 
-    const limitIndex = priceToBucket(limitPrice)
+    
+    const limitIndex = priceToBucket(limitPrice, pool);
     console.log(`Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`);
     const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);
 

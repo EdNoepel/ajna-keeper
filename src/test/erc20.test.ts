@@ -1,7 +1,5 @@
-import { providers, Wallet, Contract, BigNumber } from 'ethers';
+import { providers, Wallet, Contract, BigNumber, ContractTransaction } from 'ethers';
 import {Signer} from '@ajna-finance/sdk';
-// import { approveErc20 } from '../erc20';
-import { wadToNumber } from '../utils';
 import { approveErc20 } from '../erc20';
 import { resetHardhat, getImpersonatedSigner, setBalance } from './test-utils';
 import {LOCAL_MAIN_NET_CONFIG} from './test-config';
@@ -24,7 +22,6 @@ export async function getErc20Allowance(
 }
 
 describe.only('approverErc20', () => {
-  let provider: providers.JsonRpcProvider;
 
   before(async () => {
     await resetHardhat();
@@ -34,9 +31,30 @@ describe.only('approverErc20', () => {
     const receiver = Wallet.fromMnemonic(LOCAL_MAIN_NET_CONFIG.USER1_MNEMONIC);
     const signer = await getImpersonatedSigner(WETH_WHALE_ADDRESS);
     await setBalance(WETH_WHALE_ADDRESS, '0x10000000000000');
-    await approveErc20(signer, LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.quoteTokenAddress, receiver.address, BigNumber.from("1000000000"));
+    const approveTx = await approveErc20(signer, LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.quoteTokenAddress, receiver.address, BigNumber.from("1000000000"));
+    console.log('is Instance of ContractTransaction:', Object.keys(approveTx));
+    await approveTx.wait();
     const allowance = await getErc20Allowance(signer, LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.quoteTokenAddress, WETH_WHALE_ADDRESS, receiver.address);
     console.log("allowance:", allowance.toString())
     expect(allowance.eq(BigNumber.from("1000000000"))).to.be.true;
   });
+});
+
+describe('getBallanceOfErc20', () => {
+
+  before(async () => {
+    await resetHardhat();
+  });
+
+  it('Can balance of ERC20', async () => {
+    const receiver = Wallet.fromMnemonic(LOCAL_MAIN_NET_CONFIG.USER1_MNEMONIC);
+    const signer = await getImpersonatedSigner(WETH_WHALE_ADDRESS);
+    await setBalance(WETH_WHALE_ADDRESS, '0x10000000000000');
+    const approveTx = await approveErc20(signer, LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.quoteTokenAddress, receiver.address, BigNumber.from("1000000000"));
+    await approveTx.wait();
+    const allowance = await getErc20Allowance(signer, LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.quoteTokenAddress, WETH_WHALE_ADDRESS, receiver.address);
+    console.log("allowance:", allowance.toString())
+    expect(allowance.eq(BigNumber.from("1000000000"))).to.be.true;
+  })
+
 });

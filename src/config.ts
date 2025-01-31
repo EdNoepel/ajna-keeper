@@ -63,6 +63,7 @@ interface KickSettings {
 interface TakeSettings {
   minCollateral: number;
   priceFactor: number;
+  withdrawRewardLiquidity: boolean;
 }
 
 interface DexConfig {

@@ -1,18 +1,16 @@
 import { Signer } from "@ajna-finance/sdk";
-import { BigNumber, Contract, ContractReceipt, ContractTransaction, providers } from 'ethers';
+import { BigNumber, Contract, ContractTransaction, providers } from 'ethers';
 import IERC20Minimal from '@uniswap/v3-core/artifacts/contracts/interfaces/IERC20Minimal.sol/IERC20Minimal.json';
 
-export async function approveErc20(
+export function approveErc20(
     signer: Signer,
     tokenAddress: string,
     spenderAddress: string,
     amount: BigNumber,
-): Promise<ContractReceipt> {
+): Promise<ContractTransaction> {
     const contract = new Contract(tokenAddress, IERC20Minimal.abi, signer);
-    const contractTx: ContractTransaction = await contract.approve(spenderAddress, amount);
-    return await contractTx.wait();
+    return contract.approve(spenderAddress, amount);
 }
-
 
 // export async function getDecimalsErc20(
 //   provider: providers.JsonRpcProvider,

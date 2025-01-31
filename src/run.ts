@@ -1,18 +1,17 @@
-import { AjnaSDK, Pool, Signer } from '@ajna-finance/sdk'
+import { AjnaSDK, FungiblePool, Signer } from '@ajna-finance/sdk'
 import { configureAjna, KeeperConfig, PoolConfig } from './config'
 import { delay, getProviderAndSigner, overrideMulticall } from './utils'
 import { handleKicks } from './kick'
 import { handleArbTakes } from './take'
 import {getPrice} from './price';
 
-type PoolMap = Map<string, Pool>;
+type PoolMap = Map<string, FungiblePool>;
 
 
 export async function startKeeperFromConfig(config: KeeperConfig) {
   const { provider, signer } = await getProviderAndSigner(config.keeperKeystore, config.ethRpcUrl);
   configureAjna(config.ajna);
   const ajna = new AjnaSDK(provider);
-
   console.log('...and pools:');
   const pools = await getPoolsFromConfig(ajna, config);
 
@@ -42,7 +41,7 @@ async function getPoolsFromConfig(ajna: AjnaSDK, config: KeeperConfig): Promise<
   return pools
 }
 
-async function keepPool(poolConfig: PoolConfig, pool: Pool, config: KeeperConfig, signer: Signer) {
+async function keepPool(poolConfig: PoolConfig, pool: FungiblePool, config: KeeperConfig, signer: Signer) {
   let price: number;
   price = await getPrice(pool, poolConfig.price, config.pricing.coinGeckoApiKey);
   console.debug(poolConfig.name, `${poolConfig.price.source} price`, price);
