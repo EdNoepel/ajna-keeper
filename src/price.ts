@@ -1,11 +1,10 @@
 import { PriceOrigin, PriceOriginPoolReference, PriceOriginSource } from './config'
 import { getPrice as getPriceCoinGecko } from './coingecko'
 import { wadToNumber } from './utils'
-import { KeeperContext } from './run';
 import { Pool } from '@ajna-finance/sdk';
 
 // Retrieves the market price using the configured source
-export async function getPrice(poolAddress: string, priceOrigin: PriceOrigin, coinGeckoApiKey: string = "", pools: KeeperContext["pools"]) {
+export async function getPrice(pool: Pool, priceOrigin: PriceOrigin, coinGeckoApiKey: string = "") {
   let price: number;
   switch (priceOrigin.source) {
     case PriceOriginSource.COINGECKO:
@@ -15,7 +14,7 @@ export async function getPrice(poolAddress: string, priceOrigin: PriceOrigin, co
       price = priceOrigin.value;
       break;
     case PriceOriginSource.POOL:
-      price = await getPoolPrice(pools.get(poolAddress)!, priceOrigin.reference);
+      price = await getPoolPrice(pool, priceOrigin.reference);
       break;
     default:
       throw new Error('Unknown price provider:' + (priceOrigin as any).source);

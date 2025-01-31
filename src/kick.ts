@@ -1,30 +1,28 @@
 import { Address, Pool, Signer } from '@ajna-finance/sdk'
 import { getLoans } from './subgraph';
 import { delay, wadToNumber } from './utils';
-import { PoolConfig } from './config';
+import { KeeperConfig, PoolConfig } from './config';
 import { approveErc20, getBalanceOfErc20 } from './erc20';
 import { BigNumber } from 'ethers';
 import { priceToBucket } from './price';
 
-const APPROVAL_AMOUNT_FACTOR = 1.10
-
 export async function handleKicks(handleKickParams: {
-  signer: Signer,
   pool: Pool,
   poolConfig: PoolConfig,
-  subgraphUrl: string,
   price: number,
-  delayBetweenLoans: number,
-  dryRun: boolean,
+  signer: Signer,
+  config: Pick<KeeperConfig, "dryRun" | "subgraphUrl" | "delayBetweenActions">
 }) {
   const {
     signer,
     pool,
     poolConfig,
-    subgraphUrl,
     price,
-    delayBetweenLoans,
-    dryRun
+    config: {
+      subgraphUrl,
+      delayBetweenActions,
+      dryRun,
+    }
   } = handleKickParams;
 
   const {pool: {lup, hpb}, loans} = await getLoans(subgraphUrl, pool.poolAddress)
@@ -55,7 +53,7 @@ export async function handleKicks(handleKickParams: {
       }
     }
 
-    await delay(delayBetweenLoans);
+    await delay(delayBetweenActions);
   }
 }
 

@@ -12,8 +12,8 @@ const argv = yargs(process.argv.slice(2)).options({
 async function main() {
   const config = await readConfigFile(argv.config);
   console.log('Starting keeper with...');
-  console.log('  ETH_RPC_URL ', config.ETH_RPC_URL);
-  console.log('  SUBGRAPH_URL', config.SUBGRAPH_URL);
+  console.log('  ETH_RPC_URL ', config.ethRpcUrl);
+  console.log('  SUBGRAPH_URL', config.subgraphUrl);
 
   startKeeperFromConfig(config);
 }

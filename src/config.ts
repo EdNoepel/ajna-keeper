@@ -3,6 +3,10 @@ import path from 'path'
 import { Config, Address } from '@ajna-finance/sdk'
 import { FeeAmount } from '@uniswap/v3-sdk';
 
+// these are in seconds, helps manage API costs and rate limits
+const DELAY_BETWEEN_LOANS = 1.5
+const DELAY_MAIN_LOOP = 15
+
 export interface AjnaConfigParams {
   erc20PoolFactory: Address;
   erc721PoolFactory: Address;
@@ -69,22 +73,23 @@ export interface PoolConfig {
   name: string;
   address: Address;
   price: PriceOrigin;
-  "price-disabled": PriceOrigin;
   kick?: KickSettings;
   take?: TakeSettings;
   dexSettings?: DexConfig;  // Only set this value if you want winnings sent to dex and traded for L2 token.
 }
 
 export interface KeeperConfig {
-  ajna: AjnaConfigParams;
+  ethRpcUrl: string;
+  subgraphUrl: string;
+  keeperKeystore: string;
   dryRun?: boolean;
   multicallAddress?: string;
   multicallBlock?: number;
-  ETH_RPC_URL: string;
-  SUBGRAPH_URL: string;
-  KEEPER_KEYSTORE: string;
+  ajna: AjnaConfigParams;
   pricing: PricingApiKey;
   pools: PoolConfig[];
+  delayBetweenActions: number;
+  delayBetweenRuns: number;
 }
 
 export async function readConfigFile(filePath: string): Promise<KeeperConfig> {
@@ -100,19 +105,21 @@ export async function readConfigFile(filePath: string): Promise<KeeperConfig> {
   }
 }
 
-export function assertIsValidConfig(config: any): asserts config is KeeperConfig {
-  expectProperty(config, "ajna")  // TODO: Validate nested ajna fields?
-  expectProperty(config, "ETH_RPC_URL")
-  expectProperty(config, "SUBGRAPH_URL")
-  expectProperty(config, "KEEPER_KEYSTORE")
-  expectProperty(config, "pricing")
-  expectProperty(config, "pools")
-  // TODO: validate the config
+export function assertIsValidConfig(config: Partial<KeeperConfig>): asserts config is KeeperConfig {
+  expectProperty(config, "ethRpcUrl");
+  expectProperty(config, "subgraphUrl");
+  expectProperty(config, "keeperKeystore");
+  expectProperty(config, "ajna");
+  expectProperty(config, "pricing");
+  expectProperty(config, "pools");
+  config.delayBetweenActions = config.delayBetweenActions ?? DELAY_BETWEEN_LOANS;
+  config.delayBetweenRuns = config.delayBetweenRuns ?? DELAY_MAIN_LOOP;
+  // TODO: validate the nested config
 }
 
-function expectProperty(config: any, key: string): void {
+function expectProperty<T, K extends keyof T>(config: T, key: K): void {
   if(!(config as Object).hasOwnProperty(key)) {
-    throw new Error(`Missing ${key} key from config`)
+    throw new Error(`Missing ${String(key)} key from config`)
   }
 }
 

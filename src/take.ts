@@ -1,7 +1,7 @@
 import { Pool, Signer } from '@ajna-finance/sdk'
 import { getLiquidations } from './subgraph';
 import { delay } from './utils';
-import { PoolConfig } from './config';
+import { KeeperConfig, PoolConfig } from './config';
 import { getAuctionPrice } from './price';
 import { getTime } from './time';
 
@@ -9,17 +9,17 @@ export async function handleArbTakes(handleArbParams: {
   signer: Signer,
   pool: Pool,
   poolConfig: PoolConfig,
-  subgraphUrl: string,
-  delayBetweenLoans: number,
-  dryRun: boolean,
+  config: Pick<KeeperConfig, "dryRun" | "subgraphUrl" | "delayBetweenActions">,
 }) {
   const {
     signer,
     pool,
     poolConfig,
-    subgraphUrl,
-    delayBetweenLoans,
-    dryRun,
+    config: {
+      subgraphUrl,
+      delayBetweenActions,
+      dryRun,
+    }
   } = handleArbParams;
   const {pool: {hpb, hpbIndex, liquidationAuctions}} = await getLiquidations(subgraphUrl, pool.poolAddress, poolConfig.take!.minCollateral);
   for (const auction of liquidationAuctions) {
@@ -35,7 +35,8 @@ export async function handleArbTakes(handleArbParams: {
         console.log(`ArbTaking - poolAddress: ${pool.poolAddress}, borrower: ${borrower}, currentPrice: ${currentPrice}, hpb: ${hpb}`);
         const liquidationSdk = pool.getLiquidation(borrower);
         await liquidationSdk.arbTake(signer, hpbIndex);
-        await delay(delayBetweenLoans);
+        // TODO: retrieve winnings.
+        await delay(delayBetweenActions);
       }
     }
   }
