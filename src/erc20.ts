@@ -8,17 +8,26 @@ export async function approveErc20(
     spenderAddress: string,
     amount: BigNumber,
 ): Promise<ContractReceipt> {
-    console.log(`Approving funds transfer token address:${tokenAddress} spender address:${spenderAddress} amount:${amount}`)
     const contract = new Contract(tokenAddress, IERC20Minimal.abi, signer);
     const contractTx: ContractTransaction = await contract.approve(spenderAddress, amount);
     return await contractTx.wait();
 }
 
+
 export async function getDecimalsErc20(
   provider: providers.JsonRpcProvider,
-  tokenAddress: string
+  tokenAddress: string,
 ) {
   const contract = new Contract(tokenAddress, IERC20Minimal.abi, provider);
   const decimals = await contract.decimals();
   return decimals; 
+}
+
+export async function getBalanceOfErc20(
+  signer: Signer,
+  tokenAddress: string,
+): Promise<BigNumber> {
+  const contract = new Contract(tokenAddress, IERC20Minimal.abi, signer);
+  const ownerAddress = await signer.getAddress();
+  return await contract.balanceOf(ownerAddress)
 }

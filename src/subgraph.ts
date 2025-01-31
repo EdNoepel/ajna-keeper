@@ -23,8 +23,7 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
       inLiquidation: boolean;
       thresholdPrice: number;
     }[] 
-    }
-    = await request(subgraphUrl, query);
+  } = await request(subgraphUrl, query);
   return result;
 }
 

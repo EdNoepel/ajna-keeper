@@ -1,8 +1,9 @@
 import { Address, Pool, Signer } from '@ajna-finance/sdk'
 import { getLoans } from './subgraph';
-import { delay, bigNumberToWad, wadToBigNumber } from './utils';
+import { delay, bigNumberToWad } from './utils';
 import { PoolConfig } from './config';
-import { approveErc20 } from './erc20';
+import { approveErc20, getBalanceOfErc20 } from './erc20';
+import { BigNumber } from 'ethers';
 
 const APPROVAL_AMOUNT_FACTOR = 1.10
 
@@ -48,10 +49,10 @@ export async function handleKicks(handleKickParams: {
     //    Note: If two kicks happen simultaneously, make sure they do not overdraft.
     if (shouldBeProfitable) {
       if (!dryRun) {
-        console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}, thresholdPrice: ${thresholdPrice}, debt: ${debt}, feedPrice: ${price}`);
-        await kick(signer, pool, borrower, bigNumberToWad(liquidationBond));
+        console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}, TP: ${thresholdPrice}, feedPrice: ${price}`);
+        await kick(signer, pool, borrower, liquidationBond);
       }else {
-        console.log(`DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}, thresholdPrice: ${thresholdPrice}, debt: ${debt}, feedPrice: ${price}`);
+        console.log(`DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}, TP: ${thresholdPrice}, feedPrice: ${price}`);
       }
     }
 
@@ -59,15 +60,23 @@ export async function handleKicks(handleKickParams: {
   }
 }
 
-export async function kick(signer: Signer, pool: Pool, borrower: Address, liquidationBond: number) {
+export async function kick(signer: Signer, pool: Pool, borrower: Address, liquidationBond: BigNumber) {
   try {
-    await approveErc20(signer, pool.quoteAddress, pool.poolAddress, wadToBigNumber(liquidationBond * APPROVAL_AMOUNT_FACTOR));
+    const collateralBalance = await getBalanceOfErc20(signer, pool.collateralAddress);
+    if (collateralBalance < liquidationBond) {
+      console.log(`Balance of token: ${pool.collateralSymbol} too low to kick loan. pool: ${pool.name}, borrower: ${borrower}, bond: ${liquidationBond}`)
+      return;
+    }
+    console.log(`Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}`);
+    await approveErc20(signer, pool.quoteAddress, pool.poolAddress, liquidationBond.mul(APPROVAL_AMOUNT_FACTOR));
     const wrappedTransaction = await pool.kick(signer, borrower);  // TODO: Add limitIndex?
-    console.log(`Kicking loan for borrower ${borrower}`);
+    console.log(`Kicking loan. pool: ${pool.name}, borrower: ${borrower}`);
     const tx = await wrappedTransaction.submit();
-    console.log(`Kick transaction confirmed for borrower ${borrower}`);
+    console.log(`Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`);
   } catch (error) {
-    console.error(`Failed to kick loan for borrower ${borrower}:`, error);
+    console.error(`Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}. Error: `, error);
     throw error;
+  } finally {
+    await approveErc20(signer, pool.quoteAddress, pool.poolAddress, BigNumber.from(0));
   }
 }

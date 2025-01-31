@@ -52,13 +52,14 @@ export async function getPoolPrice(pool: Pool, reference: PriceOriginPoolReferen
   return bigNumberToWad(price);
 }
 
-function bucketToPrice(index: number) {
-  return 1.005 ^ (index - 3232)
-}
+// function bucketToPrice(index: number) {
+//   // Note: Bucket index range is [-3232, 4155]
+//   return 1.005 ^ (index)
+// }
 
-function priceToBucket(price: number) {
-  return Math.log(price) / Math.log(1.005) + 3232
-}
+// function priceToBucket(price: number) {
+//   return Math.log(price) / Math.log(1.005)
+// }
 
 
 const HALVING_DURATIONS: number[] = [
