@@ -66,14 +66,15 @@ export async function kick(signer: Signer, pool: Pool, borrower: Address, limitP
     }
     console.log(`Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}`);
     await approveErc20(signer, pool.quoteAddress, pool.poolAddress, liquidationBond);
+
     const limitIndex = priceToBucket(limitPrice)
-    const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);  // TODO: Add limitIndex?
     console.log(`Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`);
-    const tx = await wrappedTransaction.submit();
+    const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);
+
+    await wrappedTransaction.submit();
     console.log(`Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`);
   } catch (error) {
     console.error(`Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}. Error: `, error);
-    throw error;
   } finally {
     await approveErc20(signer, pool.quoteAddress, pool.poolAddress, BigNumber.from(0));
   }

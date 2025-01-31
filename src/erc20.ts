@@ -14,14 +14,14 @@ export async function approveErc20(
 }
 
 
-export async function getDecimalsErc20(
-  provider: providers.JsonRpcProvider,
-  tokenAddress: string,
-) {
-  const contract = new Contract(tokenAddress, IERC20Minimal.abi, provider);
-  const decimals = await contract.decimals();
-  return decimals; 
-}
+// export async function getDecimalsErc20(
+//   provider: providers.JsonRpcProvider,
+//   tokenAddress: string,
+// ) {
+//   const contract = new Contract(tokenAddress, IERC20Minimal.abi, provider);
+//   const decimals = await contract.decimals();
+//   return decimals; 
+// }
 
 export async function getBalanceOfErc20(
   signer: Signer,
