@@ -59,9 +59,9 @@ export async function handleKicks(handleKickParams: {
 
 export async function kick(signer: Signer, pool: FungiblePool, borrower: Address, limitPrice: number, liquidationBond: BigNumber) {
   try {
-    const collateralBalance = await getBalanceOfErc20(signer, pool.collateralAddress);
-    if (collateralBalance < liquidationBond) {
-      console.log(`Balance of token: ${pool.collateralSymbol} too low to kick loan. pool: ${pool.name}, borrower: ${borrower}, bond: ${liquidationBond}`)
+    const quoteBalance = await getBalanceOfErc20(signer, pool.quoteAddress);
+    if (quoteBalance < liquidationBond) {
+      console.log(`Balance of token: ${pool.quoteSymbol} too low to kick loan. pool: ${pool.name}, borrower: ${borrower}, bond: ${liquidationBond}`)
       return;
     }
     console.log(`Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}`);
