@@ -56,6 +56,25 @@ async function keepPool(poolConfig: PoolConfig, signer: Signer, keeperCtx: Keepe
 
   const pool = keeperCtx.pools.get(poolConfig.address);
   if (pool == undefined) throw new Error(`Cannot find pool for address: ${poolConfig.address}`);
-  if (poolConfig.kick) handleKicks(pool, poolConfig, price, keeperCtx.config.SUBGRAPH_URL, DELAY_BETWEEN_LOANS, signer, !!keeperCtx.config.dryRun);
-  if (poolConfig.take) handleArbTakes(pool, poolConfig, keeperCtx.config.SUBGRAPH_URL, DELAY_BETWEEN_LOANS, signer, !!keeperCtx.config.dryRun);
+  if (poolConfig.kick) {
+    handleKicks({
+      signer, 
+      pool, 
+      poolConfig, 
+      subgraphUrl: keeperCtx.config.SUBGRAPH_URL,
+      price, 
+      delayBetweenLoans: DELAY_BETWEEN_LOANS,
+      dryRun: !!keeperCtx.config.dryRun,
+    });
+  }
+  if (poolConfig.take) {
+    handleArbTakes({
+      pool,
+      poolConfig,
+      subgraphUrl: keeperCtx.config.SUBGRAPH_URL,
+      delayBetweenLoans: DELAY_BETWEEN_LOANS,
+      signer,
+      dryRun: !!keeperCtx.config.dryRun,
+    });
+  }
 }

@@ -6,15 +6,25 @@ import { approveErc20 } from './erc20';
 
 const APPROVAL_AMOUNT_FACTOR = 1.10
 
-export async function handleKicks(
+export async function handleKicks(handleKickParams: {
+  signer: Signer,
   pool: Pool,
   poolConfig: PoolConfig,
-  price: number,
   subgraphUrl: string,
+  price: number,
   delayBetweenLoans: number,
-  signer: Signer,
   dryRun: boolean,
-) {
+}) {
+  const {
+    signer,
+    pool,
+    poolConfig,
+    subgraphUrl,
+    price,
+    delayBetweenLoans,
+    dryRun
+  } = handleKickParams;
+
   const {pool: {lup}, loans} = await getLoans(subgraphUrl, pool.poolAddress)
   for(const loanFromSubgraph of loans) {
     const {borrower, inLiquidation, thresholdPrice} = loanFromSubgraph
@@ -23,16 +33,16 @@ export async function handleKicks(
     if (inLiquidation) continue
 
     // If TP is lower than lup, the bond can not be kicked.
-    if (thresholdPrice > lup) continue
+    if (thresholdPrice >= lup) continue
 
-    const {neutralPrice, liquidationBond, debt: debtBigNumber} = await pool.getLoan(borrower)
-    const debt = bigNumberToWad(debtBigNumber)
+    const {neutralPrice, liquidationBond, debt} = await pool.getLoan(borrower)
 
     // if loan debt is lower than configured fixed value (denominated in quote token), skip it
-    if (debt < poolConfig.kick!.minDebt) continue
+    // TODO: Does the decimals of the token impact the use of bigNumberToWad?
+    if (bigNumberToWad(debt) < poolConfig.kick!.minDebt) continue
 
     // Only kick bonds which are lower than the price * priceFactor to ensure that they are profitable.
-    const shouldBeProfitable = thresholdPrice < price * poolConfig.kick!.priceFactor;
+    const shouldBeProfitable = bigNumberToWad(neutralPrice) * poolConfig.kick!.priceFactor > price;
 
     // TODO: Make sure that user has enough QT to fund Liquidation Bond. 
     //    Note: If two kicks happen simultaneously, make sure they do not overdraft.
