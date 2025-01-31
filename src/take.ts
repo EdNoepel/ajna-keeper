@@ -13,17 +13,10 @@ interface HandleArbParams {
 }
 
 export async function handleArbTakes({signer, pool, poolConfig, config}: HandleArbParams) {
-  const { subgraphUrl, delayBetweenActions, dryRun, } = config;
-  const {pool: {hpb, hpbIndex, liquidationAuctions}} = await getLiquidations(subgraphUrl, pool.poolAddress, poolConfig.take!.minCollateral);
-  for (const auction of liquidationAuctions) {
-    const {borrower, kickTime, referencePrice} = auction;
-    const timeElapsed = getTime() - kickTime;
-    const currentPrice = getAuctionPrice(referencePrice, timeElapsed);
+  const liquidationsToArbTake = await getLiquidationsToArbTake({pool, poolConfig, config});
 
-    if (currentPrice < hpb) {
-      const liquidation = {borrower, hpbIndex};
+  for (const liquidation of liquidationsToArbTake) {
       await arbTakeLiquidation({pool, poolConfig, signer, liquidation, config});
-    }
   }
 }
 
@@ -32,12 +25,25 @@ interface LiquidationToArbTake {
   hpbIndex: number;
 }
 
-interface ArbTakeLiquidationParams {
-  pool: FungiblePool,
-  poolConfig: PoolConfig,
-  signer: Signer,
+type GetLiquidationsToArbTakeParams = Omit<HandleArbParams, "signer">;
+
+async function getLiquidationsToArbTake({pool, poolConfig, config}: GetLiquidationsToArbTakeParams): Promise<Array<LiquidationToArbTake>> {
+  const { subgraphUrl } = config;
+  const result: LiquidationToArbTake[] = []
+  const {pool: {hpb, hpbIndex, liquidationAuctions}} = await getLiquidations(subgraphUrl, pool.poolAddress, poolConfig.take!.minCollateral);
+  for (const auction of liquidationAuctions) {
+    const {borrower, kickTime, referencePrice} = auction;
+    const timeElapsed = getTime() - kickTime;
+    const currentPrice = getAuctionPrice(referencePrice, timeElapsed);
+    if (currentPrice < hpb) {
+      result.push({borrower, hpbIndex});
+    }
+  }
+  return result;
+}
+
+interface ArbTakeLiquidationParams extends HandleArbParams {
   liquidation: LiquidationToArbTake,
-  config: Pick<KeeperConfig, "delayBetweenActions" | "dryRun">,
 }
 
 async function arbTakeLiquidation({pool, poolConfig, signer, liquidation, config}: ArbTakeLiquidationParams) {
