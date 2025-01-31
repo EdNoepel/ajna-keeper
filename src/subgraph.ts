@@ -5,10 +5,10 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
     query {
       pool (id: "${poolAddress}") {
         lup
+        hpb
       }
-      loans (where: {poolAddress: "${poolAddress}"}){
+      loans (where: {inLiquidation: false, poolAddress: "${poolAddress}"}){
         borrower
-        inLiquidation
         thresholdPrice
       }
     }
@@ -16,20 +16,20 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
 
   const result: {
     pool: {
-      lup: number;  // TODO: use big number
+      lup: number;
+      hpb: number;
     },
     loans: {
       borrower: string;
-      inLiquidation: boolean;
-      thresholdPrice: number; // TODO: use bigNumber
+      thresholdPrice: number;
     }[] 
-    }
-    = await request(subgraphUrl, query)
-  return result
+  } = await request(subgraphUrl, query);
+  return result;
 }
 
 
 export async function getLiquidations(subgraphUrl: string, poolAddress: string, minCollateral: number) {
+  // TODO: Should probably sort auctions by kickTime so that we kick the most profitable auctions first.
   const query = gql`
     query {
       pool (id: "${poolAddress}") {

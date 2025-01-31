@@ -1,7 +1,7 @@
 import { providers, Wallet, Contract, BigNumber } from 'ethers';
 import {Signer} from '@ajna-finance/sdk';
 // import { approveErc20 } from '../erc20';
-import { bigNumberToWad } from '../utils';
+import { wadToNumber } from '../utils';
 import { approveErc20 } from '../erc20';
 import { resetHardhat, getImpersonatedSigner, setBalance } from './test-utils';
 import {LOCAL_MAIN_NET_CONFIG} from './test-config';

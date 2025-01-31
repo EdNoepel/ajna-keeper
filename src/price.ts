@@ -1,11 +1,10 @@
 import { PriceOrigin, PriceOriginPoolReference, PriceOriginSource } from './config'
 import { getPrice as getPriceCoinGecko } from './coingecko'
-import { bigNumberToWad } from './utils'
-import { KeeperContext } from './run';
+import { wadToNumber } from './utils'
 import { Pool } from '@ajna-finance/sdk';
 
 // Retrieves the market price using the configured source
-export async function getPrice(poolAddress: string, priceOrigin: PriceOrigin, coinGeckoApiKey: string = "", pools: KeeperContext["pools"]) {
+export async function getPrice(pool: Pool, priceOrigin: PriceOrigin, coinGeckoApiKey: string = "") {
   let price: number;
   switch (priceOrigin.source) {
     case PriceOriginSource.COINGECKO:
@@ -15,7 +14,7 @@ export async function getPrice(poolAddress: string, priceOrigin: PriceOrigin, co
       price = priceOrigin.value;
       break;
     case PriceOriginSource.POOL:
-      price = await getPoolPrice(pools.get(poolAddress)!, priceOrigin.reference);
+      price = await getPoolPrice(pool, priceOrigin.reference);
       break;
     default:
       throw new Error('Unknown price provider:' + (priceOrigin as any).source);
@@ -49,15 +48,16 @@ export async function getPoolPrice(pool: Pool, reference: PriceOriginPoolReferen
   if (price == undefined) {
     throw new Error(`Unable to get price for ${pool.poolAddress} - ${reference}`);
   }
-  return bigNumberToWad(price);
+  return wadToNumber(price);
 }
 
-function bucketToPrice(index: number) {
-  return 1.005 ^ (index - 3232)
-}
+// function bucketToPrice(index: number) {
+//   // Note: Bucket index range is [-3232, 4155]
+//   return 1.005 ^ (index);
+// }
 
-function priceToBucket(price: number) {
-  return Math.log(price) / Math.log(1.005) + 3232
+export function priceToBucket(price: number) {
+  return Math.round(Math.log(price) / Math.log(1.005));
 }
 
 
