@@ -1,4 +1,4 @@
-import { Address, FungiblePool, Pool, Signer } from '@ajna-finance/sdk'
+import { Address, FungiblePool, Loan, Pool, Signer } from '@ajna-finance/sdk'
 import { getLoans } from './subgraph';
 import { delay, wadToNumber } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
@@ -6,24 +6,39 @@ import { approveErc20, getBalanceOfErc20 } from './erc20';
 import { BigNumber } from 'ethers';
 import { priceToBucket } from './price';
 
-export async function handleKicks(handleKickParams: {
+interface HandleKickParams {
   pool: FungiblePool,
   poolConfig: PoolConfig,
   price: number,
   signer: Signer,
   config: Pick<KeeperConfig, "dryRun" | "subgraphUrl" | "delayBetweenActions">
-}) {
-  const {
-    signer,
-    pool,
-    poolConfig,
-    price,
-    config: {
-      subgraphUrl,
-      delayBetweenActions,
-      dryRun,
-    }
-  } = handleKickParams;
+}
+
+export async function handleKicks({
+  pool,
+  poolConfig,
+  price,
+  signer,
+  config,
+}: HandleKickParams) {
+  const loansToKick = await getLoansToKick({pool, poolConfig, price, config});
+
+  for (const loanToKick of loansToKick) {
+    await kick({signer, pool, loanToKick, config, price});
+    await delay(config.delayBetweenActions);
+  }
+}
+
+interface LoanToKick {
+  borrower: string;
+  liquidationBond: BigNumber;
+}
+
+type GetLoansToKickParams = Omit<HandleKickParams, "signer">;
+
+async function getLoansToKick({pool, config, poolConfig, price}: GetLoansToKickParams): Promise<Array<LoanToKick>> {
+  const {subgraphUrl} = config;
+  const result: LoanToKick[] = []
 
   const {pool: {lup, hpb}, loans} = await getLoans(subgraphUrl, pool.poolAddress)
   for(const loanFromSubgraph of loans) {
@@ -45,20 +60,26 @@ export async function handleKicks(handleKickParams: {
     const shouldBeProfitable = isNpAbovePrice && isNpAboveHpb;
 
     if (shouldBeProfitable) {
-      if (!dryRun) {
-        console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}, NP: ${neutralPrice}, feedPrice: ${price}`);
-        await kick(signer, pool, borrower, price, liquidationBond);
-      }else {
-        console.debug(`DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}, NP: ${neutralPrice}, feedPrice: ${price}`);
-      }
+      result.push({borrower, liquidationBond});
     }
-
-    await delay(delayBetweenActions);
   }
+  return result
 }
 
-export async function kick(signer: Signer, pool: FungiblePool, borrower: Address, limitPrice: number, liquidationBond: BigNumber) {
+interface KickParams extends Omit<HandleKickParams, "poolConfig"> {
+  loanToKick: LoanToKick;
+}
+
+async function kick({pool, signer, config, loanToKick, price}: KickParams){
+  const {dryRun} = config;
+  const {borrower, liquidationBond} = loanToKick;
+
+  if (dryRun) {
+    console.debug(`DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}`);
+    return;
+  }
   try {
+    console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}`);
     const quoteBalance = await getBalanceOfErc20(signer, pool.quoteAddress);
     if (quoteBalance < liquidationBond) {
       console.log(`Balance of token: ${pool.quoteSymbol} too low to kick loan. pool: ${pool.name}, borrower: ${borrower}, bond: ${liquidationBond}`)
@@ -68,7 +89,7 @@ export async function kick(signer: Signer, pool: FungiblePool, borrower: Address
     await approveErc20(signer, pool.quoteAddress, pool.poolAddress, liquidationBond);
 
     
-    const limitIndex = priceToBucket(limitPrice, pool);
+    const limitIndex = priceToBucket(price, pool);
     console.log(`Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`);
     const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);
 
