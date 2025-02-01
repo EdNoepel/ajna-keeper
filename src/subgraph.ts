@@ -1,4 +1,4 @@
-import { gql, request } from "graphql-request";
+import { gql, request } from 'graphql-request';
 
 export async function getLoans(subgraphUrl: string, poolAddress: string) {
   const query = gql`
@@ -12,23 +12,26 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
         thresholdPrice
       }
     }
-  `
+  `;
 
   const result: {
     pool: {
       lup: number;
       hpb: number;
-    },
+    };
     loans: {
       borrower: string;
       thresholdPrice: number;
-    }[] 
+    }[];
   } = await request(subgraphUrl, query);
   return result;
 }
 
-
-export async function getLiquidations(subgraphUrl: string, poolAddress: string, minCollateral: number) {
+export async function getLiquidations(
+  subgraphUrl: string,
+  poolAddress: string,
+  minCollateral: number
+) {
   // TODO: Should probably sort auctions by kickTime so that we kick the most profitable auctions first.
   const query = gql`
     query {
@@ -43,7 +46,7 @@ export async function getLiquidations(subgraphUrl: string, poolAddress: string, 
         }
       }
     }
-  `
+  `;
 
   const result: {
     pool: {
@@ -54,8 +57,8 @@ export async function getLiquidations(subgraphUrl: string, poolAddress: string, 
         collateralRemaining: number;
         kickTime: number;
         referencePrice: number;
-      }[]
-    }
+      }[];
+    };
   } = await request(subgraphUrl, query);
   return result;
 }

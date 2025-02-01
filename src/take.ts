@@ -1,4 +1,4 @@
-import { Signer, FungiblePool } from '@ajna-finance/sdk'
+import { Signer, FungiblePool } from '@ajna-finance/sdk';
 import { getLiquidations } from './subgraph';
 import { delay } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
@@ -6,17 +6,26 @@ import { getAuctionPrice } from './price';
 import { getTime } from './time';
 
 interface HandleArbParams {
-  signer: Signer,
-  pool: FungiblePool,
-  poolConfig: PoolConfig,
-  config: Pick<KeeperConfig, "dryRun" | "subgraphUrl" | "delayBetweenActions">,
+  signer: Signer;
+  pool: FungiblePool;
+  poolConfig: PoolConfig;
+  config: Pick<KeeperConfig, 'dryRun' | 'subgraphUrl' | 'delayBetweenActions'>;
 }
 
-export async function handleArbTakes({signer, pool, poolConfig, config}: HandleArbParams) {
-  const liquidationsToArbTake = await getLiquidationsToArbTake({pool, poolConfig, config});
+export async function handleArbTakes({
+  signer,
+  pool,
+  poolConfig,
+  config,
+}: HandleArbParams) {
+  const liquidationsToArbTake = await getLiquidationsToArbTake({
+    pool,
+    poolConfig,
+    config,
+  });
 
   for (const liquidation of liquidationsToArbTake) {
-      await arbTakeLiquidation({pool, poolConfig, signer, liquidation, config});
+    await arbTakeLiquidation({ pool, poolConfig, signer, liquidation, config });
   }
 }
 
@@ -25,40 +34,62 @@ interface LiquidationToArbTake {
   hpbIndex: number;
 }
 
-type GetLiquidationsToArbTakeParams = Omit<HandleArbParams, "signer">;
+type GetLiquidationsToArbTakeParams = Omit<HandleArbParams, 'signer'>;
 
-async function getLiquidationsToArbTake({pool, poolConfig, config}: GetLiquidationsToArbTakeParams): Promise<Array<LiquidationToArbTake>> {
+async function getLiquidationsToArbTake({
+  pool,
+  poolConfig,
+  config,
+}: GetLiquidationsToArbTakeParams): Promise<Array<LiquidationToArbTake>> {
   const { subgraphUrl } = config;
-  const result: LiquidationToArbTake[] = []
-  const {pool: {hpb, hpbIndex, liquidationAuctions}} = await getLiquidations(subgraphUrl, pool.poolAddress, poolConfig.take!.minCollateral);
+  const result: LiquidationToArbTake[] = [];
+  const {
+    pool: { hpb, hpbIndex, liquidationAuctions },
+  } = await getLiquidations(
+    subgraphUrl,
+    pool.poolAddress,
+    poolConfig.take!.minCollateral
+  );
   for (const auction of liquidationAuctions) {
-    const {borrower, kickTime, referencePrice} = auction;
+    const { borrower, kickTime, referencePrice } = auction;
     const timeElapsed = getTime() - kickTime;
     const currentPrice = getAuctionPrice(referencePrice, timeElapsed);
     if (currentPrice < hpb) {
-      result.push({borrower, hpbIndex});
+      result.push({ borrower, hpbIndex });
     }
   }
   return result;
 }
 
 interface ArbTakeLiquidationParams extends HandleArbParams {
-  liquidation: LiquidationToArbTake,
+  liquidation: LiquidationToArbTake;
 }
 
-async function arbTakeLiquidation({pool, poolConfig, signer, liquidation, config}: ArbTakeLiquidationParams) {
-  const {borrower, hpbIndex} = liquidation;
-  const {delayBetweenActions, dryRun} = config;
+async function arbTakeLiquidation({
+  pool,
+  poolConfig,
+  signer,
+  liquidation,
+  config,
+}: ArbTakeLiquidationParams) {
+  const { borrower, hpbIndex } = liquidation;
+  const { delayBetweenActions, dryRun } = config;
 
   if (dryRun) {
-    console.log(`DryRun - would ArbTake - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`);
+    console.log(
+      `DryRun - would ArbTake - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
+    );
   } else {
     // TODO: should we loop through this step until collateral remaining is zero?
-    console.log(`Sending ArbTake Tx - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`);
+    console.log(
+      `Sending ArbTake Tx - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
+    );
     const liquidationSdk = pool.getLiquidation(borrower);
     const arbTakeTx = await liquidationSdk.arbTake(signer, hpbIndex);
     await arbTakeTx.verifyAndSubmit();
-    console.log(`ArbTake successful - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`);
+    console.log(
+      `ArbTake successful - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
+    );
 
     // withdraw liquidity.
     if (poolConfig.take!.withdrawRewardLiquidity) {

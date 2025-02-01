@@ -4,7 +4,8 @@
   "description": "keeper bot for Ajna lending protocol",
   "main": "index.ts",
   "scripts": {
-    "start": "./node_modules/ts-node/dist/bin.js src/index.ts"
+    "start": "./node_modules/ts-node/dist/bin.js src/index.ts",
+    "format": "prettier --write ."
   },
   "author": "",
   "license": "MIT",
@@ -29,6 +30,7 @@
     "chai": "^5.1.2",
     "dotenv": "^16.4.7",
     "ethereum-waffle": "*",
-    "hardhat": "^2.22.18"
+    "hardhat": "^2.22.18",
+    "prettier": "^3.4.2"
   }
 }

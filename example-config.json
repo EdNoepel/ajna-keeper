@@ -33,7 +33,7 @@
       },
       "kick": {
         "minDebt": 0.07,
-        "priceFactor": 0.90
+        "priceFactor": 0.9
       }
     },
     {
