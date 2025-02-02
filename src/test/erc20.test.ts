@@ -7,7 +7,7 @@ import {
 } from 'ethers';
 import { Signer } from '@ajna-finance/sdk';
 import { approveErc20, getBalanceOfErc20 } from '../erc20';
-import { resetHardhat, getImpersonatedSigner, setBalance } from './test-utils';
+import { resetHardhat, impersonateSigner, setBalance } from './test-utils';
 import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
 import { expect } from 'chai';
 import { wadToNumber } from '../utils';
@@ -46,7 +46,7 @@ describe('approverErc20', () => {
 
   it('Can approve ERC20 transfer', async () => {
     const receiver = Wallet.fromMnemonic(USER1_MNEMONIC);
-    const signer = await getImpersonatedSigner(WETH_WHALE_ADDRESS);
+    const signer = await impersonateSigner(WETH_WHALE_ADDRESS);
     await setBalance(WETH_WHALE_ADDRESS, '0x100000000000000000');
     const approveTx = await approveErc20(
       signer,
@@ -71,7 +71,7 @@ describe('getBallanceOfErc20', () => {
   });
 
   it('Can get balance of ERC20', async () => {
-    const signer = await getImpersonatedSigner(WETH_WHALE_ADDRESS);
+    const signer = await impersonateSigner(WETH_WHALE_ADDRESS);
     const balanceBig = await getBalanceOfErc20(
       signer,
       MAINNET_CONFIG.WSTETH_WETH_POOL.quoteAddress

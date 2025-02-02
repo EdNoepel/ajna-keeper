@@ -21,7 +21,6 @@ export const makeGetLoansFromSdk = (pool: FungiblePool, first: number) => {
   ): Promise<GetLoanResponse> => {
     const { lup, hpb } = await pool.getPrices();
     const { loansCount } = await pool.getStats();
-    console.log('loansCount:', loansCount);
     const poolContract = ERC20Pool__factory.connect(
       pool.poolAddress,
       getProvider()
@@ -29,12 +28,10 @@ export const makeGetLoansFromSdk = (pool: FungiblePool, first: number) => {
     const borrowers: string[] = [];
     for (let i = 1; i < Math.min(first, loansCount) + 1; i++) {
       const [borrower] = await poolContract.loanInfo(i);
-      console.log(i, ' borrower', borrower);
       borrowers.push(borrower);
     }
     const loansMap = await pool.getLoans(borrowers);
     const borrowerLoanTuple = Array.from(loansMap.entries());
-    console.log(loansMap);
     const loans = borrowerLoanTuple
       .filter(([_, { isKicked }]) => !isKicked)
       .map(([borrower, { thresholdPrice }]) => ({

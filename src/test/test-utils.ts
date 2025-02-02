@@ -19,11 +19,30 @@ export const setBalance = (address: string, balance: string) =>
 export const getBalance = (address: string) =>
   getProvider().send('eth_getBalance', [address]);
 
-export const impersonateAccount = (address: string) =>
+const impersonateAccount = (address: string) =>
   getProvider().send('hardhat_impersonateAccount', [address]);
 
-export const getImpersonatedSigner = async (address: string) => {
+export const impersonateSigner = async (address: string) => {
   await impersonateAccount(address);
   const provider = getProvider();
   return provider.getSigner(address);
+};
+
+export const mine = () => getProvider().send('evm_mine', []);
+
+export const latestBlockTimestamp = async () => {
+  const latestBlock = await getProvider().send('eth_getBlockByNumber', [
+    'latest',
+    false,
+  ]);
+  return parseInt(latestBlock.timestamp, 16);
+};
+
+export const increaseTime = async (seconds: number) => {
+  const provider = getProvider();
+  const currTimestamp = await latestBlockTimestamp();
+  const nextTimestamp = (currTimestamp + seconds).toString();
+  await getProvider().send('evm_setNextBlockTimestamp', [nextTimestamp]);
+  await mine();
+  return await latestBlockTimestamp();
 };
