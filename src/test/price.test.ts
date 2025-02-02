@@ -7,7 +7,7 @@ import { getProvider, resetHardhat } from './test-utils';
 import { MAINNET_CONFIG } from './test-config';
 
 describe('getPoolPrice', () => {
-  const poolAddress = MAINNET_CONFIG.WSTETH_WETH_POOL.poolConfig.address;
+  const poolAddress = MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig.address;
   let provider: providers.JsonRpcProvider;
   let ajna: AjnaSDK;
   let fungiblePool: Pool;
@@ -25,7 +25,7 @@ describe('getPoolPrice', () => {
       fungiblePool,
       PriceOriginPoolReference.HPB
     );
-    expect(hpbPrice).to.equal(1.149872);
+    expect(hpbPrice).to.equal(59726.377253);
   });
 
   it('should find price for htp', async () => {
@@ -33,7 +33,7 @@ describe('getPoolPrice', () => {
       fungiblePool,
       PriceOriginPoolReference.HTP
     );
-    expect(htpPrice).to.equal(0.702218);
+    expect(htpPrice).to.equal(38336.040159);
   });
 
   it('should find price for lup', async () => {
@@ -41,7 +41,7 @@ describe('getPoolPrice', () => {
       fungiblePool,
       PriceOriginPoolReference.LUP
     );
-    expect(lupPrice).to.equal(1.138459);
+    expect(lupPrice).to.equal(52988.385953);
   });
 
   it('should find price for llb', async () => {

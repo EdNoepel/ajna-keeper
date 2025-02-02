@@ -2,7 +2,7 @@ import { FungiblePool, Signer } from '@ajna-finance/sdk';
 import subgraph from './subgraph';
 import { delay, wadToNumber } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
-import { approveErc20, getBalanceOfErc20 } from './erc20';
+import { getBalanceOfErc20 } from './erc20';
 import { BigNumber } from 'ethers';
 import { priceToBucket } from './price';
 
@@ -111,13 +111,7 @@ export async function kick({
     console.log(
       `Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}`
     );
-    // TODO use pool.approveQuote
-    await approveErc20(
-      signer,
-      pool.quoteAddress,
-      pool.poolAddress,
-      liquidationBond
-    );
+    await pool.quoteApprove(signer, liquidationBond);
 
     const limitIndex = priceToBucket(price, pool);
     console.log(
@@ -135,11 +129,6 @@ export async function kick({
       error
     );
   } finally {
-    await approveErc20(
-      signer,
-      pool.quoteAddress,
-      pool.poolAddress,
-      BigNumber.from(0)
-    );
+    await pool.quoteApprove(signer, BigNumber.from(0));
   }
 }

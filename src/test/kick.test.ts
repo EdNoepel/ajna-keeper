@@ -12,7 +12,7 @@ import { BigNumber } from 'ethers';
 // import spies from 'chai-spies';
 // chai.use(spies);
 
-describe.only('getLoansToKick', () => {
+describe('getLoansToKick', () => {
   before(async () => {
     await resetHardhat();
   });
@@ -101,3 +101,5 @@ describe.only('getLoansToKick', () => {
     expect(loansToKick).to.not.be.empty;
   });
 });
+
+// describe('')
