@@ -4,7 +4,7 @@ require('dotenv').config();
 module.exports = {
   solidity: '0.8.28',
   paths: {
-    tests: './src/test',
+    tests: './src/integration-tests',
   },
   networks: {
     hardhat: {
