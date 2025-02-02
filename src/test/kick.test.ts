@@ -1,9 +1,14 @@
 import './subgraph-mock';
-import { getLoansToKick } from '../kick';
+import { getLoansToKick, kick } from '../kick';
 import { AjnaSDK, FungiblePool } from '@ajna-finance/sdk';
 import { MAINNET_CONFIG } from './test-config';
 import { configureAjna } from '../config';
-import { getProvider, resetHardhat, increaseTime } from './test-utils';
+import {
+  getProvider,
+  resetHardhat,
+  increaseTime,
+  impersonateSigner,
+} from './test-utils';
 import { makeGetLoansFromSdk, overrideGetLoans } from './subgraph-mock';
 import { expect } from 'chai';
 import { numberToWad } from '../utils';
@@ -87,7 +92,6 @@ describe('getLoansToKick', () => {
     );
     overrideGetLoans(makeGetLoansFromSdk(pool, 10));
 
-    // Create kickable loan
     increaseTime(3.154e7 * 10); // Increase timestamp by 10 years.
 
     const loansToKick = await getLoansToKick({
@@ -102,4 +106,41 @@ describe('getLoansToKick', () => {
   });
 });
 
-// describe('')
+describe.only('kick', () => {
+  before(async () => {
+    await resetHardhat();
+  });
+
+  it.only('Kicks loan', async () => {
+    configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
+    const ajna = new AjnaSDK(getProvider());
+    const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
+      MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig.address
+    );
+    const signer = await impersonateSigner(
+      MAINNET_CONFIG.WBTC_USDC_POOL.quoteWhaleAddress
+    );
+    overrideGetLoans(makeGetLoansFromSdk(pool, 10));
+    increaseTime(3.154e7 * 2); // Increase timestamp by 10 years.
+    const loansToKick = await getLoansToKick({
+      pool,
+      poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
+      price: 1,
+      config: {
+        subgraphUrl: '',
+      },
+    });
+    const loanToKick = loansToKick[0];
+    console.log(loanToKick);
+
+    await kick({
+      pool,
+      signer,
+      loanToKick,
+      config: {
+        dryRun: false,
+      },
+      price: 100000,
+    });
+  });
+});

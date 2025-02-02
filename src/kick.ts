@@ -1,6 +1,6 @@
 import { FungiblePool, Signer } from '@ajna-finance/sdk';
 import subgraph from './subgraph';
-import { delay, wadToNumber } from './utils';
+import { delay, numberToWad, wadToNumber } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
 import { getBalanceOfErc20 } from './erc20';
 import { BigNumber } from 'ethers';
@@ -79,9 +79,12 @@ export async function getLoansToKick({
   return result;
 }
 
-interface KickParams extends Omit<HandleKickParams, 'poolConfig'> {
+interface KickParams extends Omit<HandleKickParams, 'poolConfig' | 'config'> {
   loanToKick: LoanToKick;
+  config: Pick<KeeperConfig, 'dryRun'>;
 }
+
+const LIQUIDATION_BOND_MARGIN: number = 1.1; // Add a margin to the liquidation bond to ensure it is enough.
 
 export async function kick({
   pool,
@@ -99,36 +102,40 @@ export async function kick({
     );
     return;
   }
-  try {
-    console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}`);
-    const quoteBalance = await getBalanceOfErc20(signer, pool.quoteAddress);
-    if (quoteBalance < liquidationBond) {
-      console.log(
-        `Balance of token: ${pool.quoteSymbol} too low to kick loan. pool: ${pool.name}, borrower: ${borrower}, bond: ${liquidationBond}`
-      );
-      return;
-    }
+  // try {
+  console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}`);
+  const quoteBalance = await getBalanceOfErc20(signer, pool.quoteAddress);
+  if (quoteBalance < liquidationBond) {
     console.log(
-      `Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}`
+      `Balance of token: ${pool.quoteSymbol} too low to kick loan. pool: ${pool.name}, borrower: ${borrower}, bond: ${liquidationBond}`
     );
-    await pool.quoteApprove(signer, liquidationBond);
-
-    const limitIndex = priceToBucket(price, pool);
-    console.log(
-      `Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`
-    );
-    const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);
-
-    await wrappedTransaction.submit();
-    console.log(
-      `Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`
-    );
-  } catch (error) {
-    console.error(
-      `Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}. Error: `,
-      error
-    );
-  } finally {
-    await pool.quoteApprove(signer, BigNumber.from(0));
+    return;
   }
+  console.log(
+    `Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}, quoteBalance: ${quoteBalance}`
+  );
+  const bondWithMargin = numberToWad(
+    Math.round(wadToNumber(liquidationBond) * LIQUIDATION_BOND_MARGIN)
+  );
+  const approveTx = await pool.quoteApprove(signer, bondWithMargin);
+  await approveTx.verifyAndSubmit();
+
+  const limitIndex = priceToBucket(price, pool);
+  console.log(
+    `Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`
+  );
+  // const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);
+  const kickTx = await pool.kick(signer, borrower);
+  await kickTx.verifyAndSubmit();
+  console.log(
+    `Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`
+  );
+  // } catch (error) {
+  //   console.error(
+  //     `Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}. Error: `,
+  //     error
+  //   );
+  // } finally {
+  //   await pool.quoteApprove(signer, BigNumber.from(0));
+  // }
 }

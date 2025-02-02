@@ -48,6 +48,7 @@ export async function delay(seconds: number) {
   return new Promise((res) => setTimeout(res, seconds * 1000));
 }
 
+// TODO: Fix the conversions to and from BigNumber
 export function wadToNumber(wad: BigNumber): number {
   return wad.div(1e12).toNumber() / 1e6;
 }

@@ -54,7 +54,7 @@ export const MAINNET_CONFIG = {
   WBTC_USDC_POOL: {
     quoteAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
     collateralAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-    // quoteWhaleAddress: '0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341',
+    quoteWhaleAddress: '0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341',
     collateralWhaleAddress: '0x5ee5bf7ae06d1be5997a1a72006fe6c607ec6de8',
     poolConfig: {
       name: 'WBTC/USDC',
