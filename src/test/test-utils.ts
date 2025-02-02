@@ -1,5 +1,5 @@
 import { providers } from 'ethers';
-import { HARDHAT_RPC_URL } from './test-config';
+import { HARDHAT_RPC_URL, MAINNET_CONFIG } from './test-config';
 
 export const getProvider = () => new providers.JsonRpcProvider(HARDHAT_RPC_URL);
 
@@ -8,7 +8,7 @@ export const resetHardhat = () =>
     {
       forking: {
         jsonRpcUrl: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 21731352,
+        blockNumber: MAINNET_CONFIG.BLOCK_NUMBER,
       },
     },
   ]);

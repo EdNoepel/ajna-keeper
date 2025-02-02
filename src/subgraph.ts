@@ -1,6 +1,17 @@
 import { gql, request } from 'graphql-request';
 
-export async function getLoans(subgraphUrl: string, poolAddress: string) {
+export interface GetLoanResponse {
+  pool: {
+    lup: number;
+    hpb: number;
+  };
+  loans: {
+    borrower: string;
+    thresholdPrice: number;
+  }[];
+}
+
+async function getLoans(subgraphUrl: string, poolAddress: string) {
   const query = gql`
     query {
       pool (id: "${poolAddress}") {
@@ -14,20 +25,24 @@ export async function getLoans(subgraphUrl: string, poolAddress: string) {
     }
   `;
 
-  const result: {
-    pool: {
-      lup: number;
-      hpb: number;
-    };
-    loans: {
-      borrower: string;
-      thresholdPrice: number;
-    }[];
-  } = await request(subgraphUrl, query);
+  const result: GetLoanResponse = await request(subgraphUrl, query);
   return result;
 }
 
-export async function getLiquidations(
+export interface GetLiquidationResponse {
+  pool: {
+    hpb: number;
+    hpbIndex: number;
+    liquidationAuctions: {
+      borrower: string;
+      collateralRemaining: number;
+      kickTime: number;
+      referencePrice: number;
+    }[];
+  };
+}
+
+async function getLiquidations(
   subgraphUrl: string,
   poolAddress: string,
   minCollateral: number
@@ -48,17 +63,9 @@ export async function getLiquidations(
     }
   `;
 
-  const result: {
-    pool: {
-      hpb: number;
-      hpbIndex: number;
-      liquidationAuctions: {
-        borrower: string;
-        collateralRemaining: number;
-        kickTime: number;
-        referencePrice: number;
-      }[];
-    };
-  } = await request(subgraphUrl, query);
+  const result: GetLiquidationResponse = await request(subgraphUrl, query);
   return result;
 }
+
+// Exported as default module to enable mocking in tests.
+export default { getLoans, getLiquidations };

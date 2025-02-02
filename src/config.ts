@@ -55,10 +55,10 @@ export type PriceOrigin = (
   | PriceOriginCoinGecko
   | PriceOriginPool
 ) & {
-  invert: boolean; // TODO: Is invert used for all price sources?
+  invert?: boolean; // TODO: Is invert used for all price sources?
 };
 
-interface KickSettings {
+export interface KickSettings {
   minDebt: number; // The minimum amount of debt in wad to kick a loan.
   // TODO: Assert priceFactor is less than one.
   priceFactor: number; // Once the loan price

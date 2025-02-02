@@ -1,5 +1,5 @@
-import { Address, FungiblePool, Loan, Pool, Signer } from '@ajna-finance/sdk';
-import { getLoans } from './subgraph';
+import { FungiblePool, Signer } from '@ajna-finance/sdk';
+import subgraph from './subgraph';
 import { delay, wadToNumber } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
 import { approveErc20, getBalanceOfErc20 } from './erc20';
@@ -34,9 +34,12 @@ interface LoanToKick {
   liquidationBond: BigNumber;
 }
 
-type GetLoansToKickParams = Omit<HandleKickParams, 'signer'>;
+interface GetLoansToKickParams
+  extends Pick<HandleKickParams, 'pool' | 'poolConfig' | 'price'> {
+  config: Pick<KeeperConfig, 'subgraphUrl'>;
+}
 
-async function getLoansToKick({
+export async function getLoansToKick({
   pool,
   config,
   poolConfig,
@@ -48,7 +51,7 @@ async function getLoansToKick({
   const {
     pool: { lup, hpb },
     loans,
-  } = await getLoans(subgraphUrl, pool.poolAddress);
+  } = await subgraph.getLoans(subgraphUrl, pool.poolAddress);
   for (const loanFromSubgraph of loans) {
     const { borrower, thresholdPrice } = loanFromSubgraph;
 
@@ -80,7 +83,13 @@ interface KickParams extends Omit<HandleKickParams, 'poolConfig'> {
   loanToKick: LoanToKick;
 }
 
-async function kick({ pool, signer, config, loanToKick, price }: KickParams) {
+export async function kick({
+  pool,
+  signer,
+  config,
+  loanToKick,
+  price,
+}: KickParams) {
   const { dryRun } = config;
   const { borrower, liquidationBond } = loanToKick;
 
@@ -102,6 +111,7 @@ async function kick({ pool, signer, config, loanToKick, price }: KickParams) {
     console.log(
       `Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}`
     );
+    // TODO use pool.approveQuote
     await approveErc20(
       signer,
       pool.quoteAddress,

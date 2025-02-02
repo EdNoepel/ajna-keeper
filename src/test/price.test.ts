@@ -4,10 +4,10 @@ import { providers } from 'ethers';
 import { configureAjna, PriceOriginPoolReference } from '../config';
 import { getPoolPrice } from '../price';
 import { getProvider, resetHardhat } from './test-utils';
-import { LOCAL_MAIN_NET_CONFIG } from './test-config';
+import { MAINNET_CONFIG } from './test-config';
 
 describe('getPoolPrice', () => {
-  const poolAddress = LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.poolAddress;
+  const poolAddress = MAINNET_CONFIG.WSTETH_WETH_POOL.poolConfig.address;
   let provider: providers.JsonRpcProvider;
   let ajna: AjnaSDK;
   let fungiblePool: Pool;
@@ -15,7 +15,7 @@ describe('getPoolPrice', () => {
   before(async () => {
     await resetHardhat();
     provider = getProvider();
-    configureAjna(LOCAL_MAIN_NET_CONFIG.AJNA_CONFIG);
+    configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
     ajna = new AjnaSDK(provider);
     fungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(poolAddress);
   });

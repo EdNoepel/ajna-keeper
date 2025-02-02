@@ -8,7 +8,7 @@ import {
 import { Signer } from '@ajna-finance/sdk';
 import { approveErc20, getBalanceOfErc20 } from '../erc20';
 import { resetHardhat, getImpersonatedSigner, setBalance } from './test-utils';
-import { LOCAL_MAIN_NET_CONFIG } from './test-config';
+import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
 import { expect } from 'chai';
 import { wadToNumber } from '../utils';
 
@@ -39,25 +39,25 @@ export async function getErc20Allowance(
   return await contract.allowance(owner, spender);
 }
 
-describe.only('approverErc20', () => {
+describe('approverErc20', () => {
   before(async () => {
     await resetHardhat();
   });
 
   it('Can approve ERC20 transfer', async () => {
-    const receiver = Wallet.fromMnemonic(LOCAL_MAIN_NET_CONFIG.USER1_MNEMONIC);
+    const receiver = Wallet.fromMnemonic(USER1_MNEMONIC);
     const signer = await getImpersonatedSigner(WETH_WHALE_ADDRESS);
     await setBalance(WETH_WHALE_ADDRESS, '0x100000000000000000');
     const approveTx = await approveErc20(
       signer,
-      LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.quoteTokenAddress,
+      MAINNET_CONFIG.WSTETH_WETH_POOL.quoteAddress,
       receiver.address,
       BigNumber.from('1000000000')
     );
     await approveTx.wait();
     const allowance = await getErc20Allowance(
       signer,
-      LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.quoteTokenAddress,
+      MAINNET_CONFIG.WSTETH_WETH_POOL.quoteAddress,
       WETH_WHALE_ADDRESS,
       receiver.address
     );
@@ -65,7 +65,7 @@ describe.only('approverErc20', () => {
   });
 });
 
-describe.only('getBallanceOfErc20', () => {
+describe('getBallanceOfErc20', () => {
   before(async () => {
     await resetHardhat();
   });
@@ -74,7 +74,7 @@ describe.only('getBallanceOfErc20', () => {
     const signer = await getImpersonatedSigner(WETH_WHALE_ADDRESS);
     const balanceBig = await getBalanceOfErc20(
       signer,
-      LOCAL_MAIN_NET_CONFIG.WSTETH_WETH_POOL.quoteTokenAddress
+      MAINNET_CONFIG.WSTETH_WETH_POOL.quoteAddress
     );
     const balance = wadToNumber(balanceBig);
     expect(balance).to.equal(604264.559344);
