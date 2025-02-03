@@ -10,6 +10,8 @@ import subgraphModule, {
 } from '../subgraph';
 import { getProvider } from './test-utils';
 import { weiToDecimaled } from '../utils';
+import { EventFilter } from 'ethers';
+import { MAINNET_CONFIG } from './test-config';
 
 export function overrideGetLoans(
   fn: typeof subgraphModule.getLoans
@@ -78,57 +80,49 @@ export function makeGetLiquidationsFromSdk(pool: FungiblePool) {
     minCollateral: number
   ): Promise<GetLiquidationResponse> => {
     const { hpb, hpbIndex } = await pool.getPrices();
-    const loansMap = await getLoansMap(pool);
-
-    // Need to iterate over liquidations like linked list.
     const poolContract = ERC20Pool__factory.connect(
       pool.poolAddress,
       getProvider()
     );
-
-    const auctionsCount = await poolContract.totalAuctionsInPool();
-
-    // const poolInfoUtils = PoolInfoUtils__factory.connect(
-    //   pool.poolAddress,
-    //   getProvider()
-    // );
-    // const [
-    //   poolSize,
-    //   loansCount,
-    //   maxBorrower,
-    //   pendingInflator,
-    //   pendingInterestFactor,
-    // ] = await poolInfoUtils.poolLoansInfo(pool.poolAddress);
+    const events = await poolContract.queryFilter(
+      poolContract.filters.Kick(),
+      MAINNET_CONFIG.BLOCK_NUMBER
+    );
+    const borrowers: string[] = [];
+    for (const evt of events) {
+      const { borrower } = evt.args;
+      borrowers.push(borrower);
+    }
     const liquidationAuctions: GetLiquidationResponse['pool']['liquidationAuctions'] =
       [];
-    console.log(`borrowers: ${[...Object.keys(loansMap)]}`);
-    for (const borrower of Object.keys(loansMap)) {
-      const loan = loansMap.get(borrower);
-      if (loan?.isKicked) {
-        console.log(
-          `getting auction status for borrower: ${borrower}, poolAddress: ${pool.poolAddress}`
-        );
-        const [
+    for (const borrower of borrowers) {
+      console.log(`getting auction for borrower: ${borrower}`);
+      try {
+        const liquidation = await pool.getLiquidation(borrower);
+        const {
           kickTime,
           collateral,
           debtToCover,
+          isTakeable,
           isCollateralized,
           price,
           neutralPrice,
-          referencePrice,
-          debtToCollateral,
-          bondFactor,
-        ] = await poolInfoUtils.auctionStatus(pool.poolAddress, borrower);
-        if (weiToDecimaled(collateral) >= minCollateral) {
-          liquidationAuctions.push({
-            borrower,
-            collateralRemaining: weiToDecimaled(collateral),
-            kickTime: parseInt(kickTime.toString()),
-            referencePrice: weiToDecimaled(referencePrice),
-          });
-        }
+          isSettleable,
+        } = await liquidation.getStatus();
+
+        liquidationAuctions.push({
+          borrower,
+          collateralRemaining: weiToDecimaled(collateral),
+          kickTime: parseFloat(kickTime.toString()),
+          referencePrice: weiToDecimaled(price),
+        });
+      } catch (e) {
+        console.debug(
+          `Failed to find auction for borrower: ${borrower}, pool: ${pool.name}`
+        );
       }
     }
+
     return {
       pool: {
         hpb: weiToDecimaled(hpb),

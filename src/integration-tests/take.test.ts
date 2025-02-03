@@ -76,6 +76,6 @@ describe('getLiquidationsToArbTake', () => {
         subgraphUrl: '',
       },
     });
-    expect(liquidationsToArbTake).to.be.empty;
+    expect(liquidationsToArbTake).to.not.be.empty;
   });
 });
