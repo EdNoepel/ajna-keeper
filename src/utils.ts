@@ -1,4 +1,4 @@
-import { BigNumber, providers, Wallet } from 'ethers';
+import { BigNumber, providers, Wallet, utils } from 'ethers';
 import { promises as fs } from 'fs';
 import { password } from '@inquirer/prompts';
 import { FungiblePool } from '@ajna-finance/sdk';
@@ -49,12 +49,12 @@ export async function delay(seconds: number) {
 }
 
 // TODO: Fix the conversions to and from BigNumber
-export function wadToNumber(wad: BigNumber): number {
-  return wad.div(1e12).toNumber() / 1e6;
+export function weiToEth(wei: BigNumber): number {
+  return parseFloat(utils.formatEther(wei));
 }
 
-export function numberToWad(dec: number): BigNumber {
-  return BigNumber.from(dec * 1e6).mul(1e12);
+export function ethToWei(dec: number): BigNumber {
+  return utils.parseEther(dec.toString());
 }
 
 export async function getProviderAndSigner(

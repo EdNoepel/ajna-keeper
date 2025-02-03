@@ -11,7 +11,7 @@ import {
 } from './test-utils';
 import { makeGetLoansFromSdk, overrideGetLoans } from './subgraph-mock';
 import { expect } from 'chai';
-import { numberToWad } from '../utils';
+import { ethToWei } from '../utils';
 import { BigNumber } from 'ethers';
 
 // import spies from 'chai-spies';

@@ -1,7 +1,7 @@
 import { ERC20Pool__factory, FungiblePool } from '@ajna-finance/sdk';
 import subgraphModule, { GetLoanResponse } from '../subgraph';
 import { getProvider } from './test-utils';
-import { wadToNumber } from '../utils';
+import { weiToEth } from '../utils';
 
 export function overrideGetLoans(
   fn: typeof subgraphModule.getLoans
@@ -36,12 +36,12 @@ export const makeGetLoansFromSdk = (pool: FungiblePool, first: number) => {
       .filter(([_, { isKicked }]) => !isKicked)
       .map(([borrower, { thresholdPrice }]) => ({
         borrower,
-        thresholdPrice: wadToNumber(thresholdPrice),
+        thresholdPrice: weiToEth(thresholdPrice),
       }));
     return {
       pool: {
-        lup: wadToNumber(lup),
-        hpb: wadToNumber(hpb),
+        lup: weiToEth(lup),
+        hpb: weiToEth(hpb),
       },
       loans,
     };

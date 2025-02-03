@@ -5,7 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "start": "./node_modules/ts-node/dist/bin.js src/index.ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "unittests": "npx mocha --require ts-node/register 'src/unit-tests/**/*.test.ts'"
   },
   "author": "",
   "license": "MIT",

@@ -1,6 +1,6 @@
 import { FungiblePool, Signer } from '@ajna-finance/sdk';
 import subgraph from './subgraph';
-import { delay, numberToWad, wadToNumber } from './utils';
+import { delay, ethToWei, weiToEth } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
 import { getBalanceOfErc20 } from './erc20';
 import { BigNumber } from 'ethers';
@@ -62,14 +62,14 @@ export async function getLoansToKick({
       await pool.getLoan(borrower);
 
     // if loan debt is lower than configured fixed value (denominated in quote token), skip it
-    if (wadToNumber(debt) < poolConfig.kick!.minDebt) continue;
+    if (weiToEth(debt) < poolConfig.kick!.minDebt) continue;
 
     // Only kick loans with a neutralPrice above price (with some margin) to ensure they are profitable.
     const isNpAbovePrice =
-      wadToNumber(neutralPrice) * poolConfig.kick!.priceFactor > price;
+      weiToEth(neutralPrice) * poolConfig.kick!.priceFactor > price;
 
     // Only kick loans with a neutralPrice above hpb to ensure they are profitalbe.
-    const isNpAboveHpb = wadToNumber(neutralPrice) > hpb;
+    const isNpAboveHpb = weiToEth(neutralPrice) > hpb;
     const shouldBeProfitable = isNpAbovePrice && isNpAboveHpb;
 
     if (shouldBeProfitable) {
@@ -114,8 +114,8 @@ export async function kick({
   console.log(
     `Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}, quoteBalance: ${quoteBalance}`
   );
-  const bondWithMargin = numberToWad(
-    Math.round(wadToNumber(liquidationBond) * LIQUIDATION_BOND_MARGIN)
+  const bondWithMargin = ethToWei(
+    Math.round(weiToEth(liquidationBond) * LIQUIDATION_BOND_MARGIN)
   );
   const approveTx = await pool.quoteApprove(signer, bondWithMargin);
   await approveTx.verifyAndSubmit();
