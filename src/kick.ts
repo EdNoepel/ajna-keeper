@@ -84,7 +84,7 @@ interface KickParams extends Omit<HandleKickParams, 'poolConfig' | 'config'> {
   config: Pick<KeeperConfig, 'dryRun'>;
 }
 
-const LIQUIDATION_BOND_MARGIN: number = 1.1; // Add a margin to the liquidation bond to ensure it is enough.
+const LIQUIDATION_BOND_MARGIN: number = 0.01; // How much extra margin to allow for liquidationBond. Expressed as a factor.
 
 export async function kick({
   pool,
@@ -102,40 +102,40 @@ export async function kick({
     );
     return;
   }
-  // try {
-  console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}`);
-  const quoteBalance = await getBalanceOfErc20(signer, pool.quoteAddress);
-  if (quoteBalance < liquidationBond) {
+  try {
+    console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}`);
+    const quoteBalance = await getBalanceOfErc20(signer, pool.quoteAddress);
+    if (quoteBalance < liquidationBond) {
+      console.log(
+        `Balance of token: ${pool.quoteSymbol} too low to kick loan. pool: ${pool.name}, borrower: ${borrower}, bond: ${liquidationBond}`
+      );
+      return;
+    }
     console.log(
-      `Balance of token: ${pool.quoteSymbol} too low to kick loan. pool: ${pool.name}, borrower: ${borrower}, bond: ${liquidationBond}`
+      `Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}, quoteBalance: ${quoteBalance}`
     );
-    return;
-  }
-  console.log(
-    `Approving liquidationBond for kick. pool: ${pool.name}, liquidationBond: ${liquidationBond}, quoteBalance: ${quoteBalance}`
-  );
-  const bondWithMargin = ethToWei(
-    Math.round(weiToEth(liquidationBond) * LIQUIDATION_BOND_MARGIN)
-  );
-  const approveTx = await pool.quoteApprove(signer, bondWithMargin);
-  await approveTx.verifyAndSubmit();
+    const bondWithMargin = ethToWei(
+      weiToEth(liquidationBond) * (1 + LIQUIDATION_BOND_MARGIN)
+    );
+    const approveTx = await pool.quoteApprove(signer, bondWithMargin);
+    await approveTx.verifyAndSubmit();
 
-  const limitIndex = priceToBucket(price, pool);
-  console.log(
-    `Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`
-  );
-  // const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);
-  const kickTx = await pool.kick(signer, borrower);
-  await kickTx.verifyAndSubmit();
-  console.log(
-    `Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`
-  );
-  // } catch (error) {
-  //   console.error(
-  //     `Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}. Error: `,
-  //     error
-  //   );
-  // } finally {
-  //   await pool.quoteApprove(signer, BigNumber.from(0));
-  // }
+    const limitIndex = priceToBucket(price, pool);
+    console.log(
+      `Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`
+    );
+    // const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);
+    const kickTx = await pool.kick(signer, borrower, limitIndex);
+    await kickTx.verifyAndSubmit();
+    console.log(
+      `Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`
+    );
+  } catch (error) {
+    console.error(
+      `Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}. Error: `,
+      error
+    );
+  } finally {
+    await pool.quoteApprove(signer, BigNumber.from(0));
+  }
 }

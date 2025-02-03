@@ -11,8 +11,6 @@ import {
 } from './test-utils';
 import { makeGetLoansFromSdk, overrideGetLoans } from './subgraph-mock';
 import { expect } from 'chai';
-import { ethToWei } from '../utils';
-import { BigNumber } from 'ethers';
 
 // import spies from 'chai-spies';
 // chai.use(spies);
@@ -131,7 +129,6 @@ describe.only('kick', () => {
       },
     });
     const loanToKick = loansToKick[0];
-    console.log(loanToKick);
 
     await kick({
       pool,
@@ -140,7 +137,7 @@ describe.only('kick', () => {
       config: {
         dryRun: false,
       },
-      price: 100000,
+      price: 1,
     });
   });
 });

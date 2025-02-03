@@ -6,7 +6,8 @@
   "scripts": {
     "start": "./node_modules/ts-node/dist/bin.js src/index.ts",
     "format": "prettier --write .",
-    "unittests": "npx mocha --require ts-node/register 'src/unit-tests/**/*.test.ts'"
+    "unit-tests": "npx mocha --require ts-node/register 'src/unit-tests/**/*.test.ts'",
+    "integration-tests": "npx hardhat test"
   },
   "author": "",
   "license": "MIT",
