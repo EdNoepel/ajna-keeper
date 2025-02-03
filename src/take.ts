@@ -57,6 +57,7 @@ export async function getLiquidationsToArbTake({
     const { borrower, kickTime, referencePrice } = auction;
     const timeElapsed = getTime() - kickTime;
     const currentPrice = getAuctionPrice(referencePrice, timeElapsed);
+    // TODO: Add price factor.
     if (currentPrice < hpb) {
       result.push({ borrower, hpbIndex });
     }

@@ -9,7 +9,7 @@ import subgraphModule, {
   GetLoanResponse,
 } from '../subgraph';
 import { getProvider } from './test-utils';
-import { weiToEth } from '../utils';
+import { weiToDecimaled } from '../utils';
 
 export function overrideGetLoans(
   fn: typeof subgraphModule.getLoans
@@ -34,17 +34,31 @@ export const makeGetLoansFromSdk = (pool: FungiblePool) => {
       .filter(([_, { isKicked }]) => !isKicked)
       .map(([borrower, { thresholdPrice }]) => ({
         borrower,
-        thresholdPrice: weiToEth(thresholdPrice),
+        thresholdPrice: weiToDecimaled(thresholdPrice),
       }));
     return {
       pool: {
-        lup: weiToEth(lup),
-        hpb: weiToEth(hpb),
+        lup: weiToDecimaled(lup),
+        hpb: weiToDecimaled(hpb),
       },
       loans,
     };
   };
 };
+
+async function getLoansMap(pool: FungiblePool): Promise<Map<string, Loan>> {
+  const { loansCount } = await pool.getStats();
+  const poolContract = ERC20Pool__factory.connect(
+    pool.poolAddress,
+    getProvider()
+  );
+  const borrowers: string[] = [];
+  for (let i = 1; i < loansCount + 1; i++) {
+    const [borrower] = await poolContract.loanInfo(i);
+    borrowers.push(borrower);
+  }
+  return await pool.getLoans(borrowers);
+}
 
 export function overrideGetLiquidations(
   fn: typeof subgraphModule.getLiquidations
@@ -64,16 +78,30 @@ export function makeGetLiquidationsFromSdk(pool: FungiblePool) {
     minCollateral: number
   ): Promise<GetLiquidationResponse> => {
     const { hpb, hpbIndex } = await pool.getPrices();
-    console.log('getting borrowers');
     const loansMap = await getLoansMap(pool);
-    console.log('getting pool info utils');
-    const poolInfoUtils = PoolInfoUtils__factory.connect(
+
+    // Need to iterate over liquidations like linked list.
+    const poolContract = ERC20Pool__factory.connect(
       pool.poolAddress,
       getProvider()
     );
+
+    const auctionsCount = await poolContract.totalAuctionsInPool();
+
+    // const poolInfoUtils = PoolInfoUtils__factory.connect(
+    //   pool.poolAddress,
+    //   getProvider()
+    // );
+    // const [
+    //   poolSize,
+    //   loansCount,
+    //   maxBorrower,
+    //   pendingInflator,
+    //   pendingInterestFactor,
+    // ] = await poolInfoUtils.poolLoansInfo(pool.poolAddress);
     const liquidationAuctions: GetLiquidationResponse['pool']['liquidationAuctions'] =
       [];
-    console.log('getting auctionStatuses');
+    console.log(`borrowers: ${[...Object.keys(loansMap)]}`);
     for (const borrower of Object.keys(loansMap)) {
       const loan = loansMap.get(borrower);
       if (loan?.isKicked) {
@@ -91,36 +119,22 @@ export function makeGetLiquidationsFromSdk(pool: FungiblePool) {
           debtToCollateral,
           bondFactor,
         ] = await poolInfoUtils.auctionStatus(pool.poolAddress, borrower);
-        if (weiToEth(collateral) >= minCollateral) {
+        if (weiToDecimaled(collateral) >= minCollateral) {
           liquidationAuctions.push({
             borrower,
-            collateralRemaining: weiToEth(collateral),
+            collateralRemaining: weiToDecimaled(collateral),
             kickTime: parseInt(kickTime.toString()),
-            referencePrice: weiToEth(referencePrice),
+            referencePrice: weiToDecimaled(referencePrice),
           });
         }
       }
     }
     return {
       pool: {
-        hpb: weiToEth(hpb),
+        hpb: weiToDecimaled(hpb),
         hpbIndex,
         liquidationAuctions,
       },
     };
   };
-}
-
-async function getLoansMap(pool: FungiblePool): Promise<Map<string, Loan>> {
-  const { loansCount } = await pool.getStats();
-  const poolContract = ERC20Pool__factory.connect(
-    pool.poolAddress,
-    getProvider()
-  );
-  const borrowers: string[] = [];
-  for (let i = 1; i < loansCount + 1; i++) {
-    const [borrower] = await poolContract.loanInfo(i);
-    borrowers.push(borrower);
-  }
-  return await pool.getLoans(borrowers);
 }
