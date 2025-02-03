@@ -1,6 +1,6 @@
 import { Signer, FungiblePool } from '@ajna-finance/sdk';
-import { getLiquidations } from './subgraph';
-import { delay } from './utils';
+import subgraph from './subgraph';
+import { delay, RequireFields } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
 import { getAuctionPrice } from './price';
 import { getTime } from './time';
@@ -8,7 +8,7 @@ import { getTime } from './time';
 interface HandleArbParams {
   signer: Signer;
   pool: FungiblePool;
-  poolConfig: PoolConfig;
+  poolConfig: RequireFields<PoolConfig, 'take'>;
   config: Pick<KeeperConfig, 'dryRun' | 'subgraphUrl' | 'delayBetweenActions'>;
 }
 
@@ -34,9 +34,12 @@ interface LiquidationToArbTake {
   hpbIndex: number;
 }
 
-type GetLiquidationsToArbTakeParams = Omit<HandleArbParams, 'signer'>;
+interface GetLiquidationsToArbTakeParams
+  extends Pick<HandleArbParams, 'pool' | 'poolConfig'> {
+  config: Pick<KeeperConfig, 'subgraphUrl'>;
+}
 
-async function getLiquidationsToArbTake({
+export async function getLiquidationsToArbTake({
   pool,
   poolConfig,
   config,
@@ -45,10 +48,10 @@ async function getLiquidationsToArbTake({
   const result: LiquidationToArbTake[] = [];
   const {
     pool: { hpb, hpbIndex, liquidationAuctions },
-  } = await getLiquidations(
+  } = await subgraph.getLiquidations(
     subgraphUrl,
     pool.poolAddress,
-    poolConfig.take!.minCollateral
+    poolConfig.take.minCollateral
   );
   for (const auction of liquidationAuctions) {
     const { borrower, kickTime, referencePrice } = auction;
@@ -61,11 +64,12 @@ async function getLiquidationsToArbTake({
   return result;
 }
 
-interface ArbTakeLiquidationParams extends HandleArbParams {
+interface ArbTakeLiquidationParams extends Omit<HandleArbParams, 'config'> {
   liquidation: LiquidationToArbTake;
+  config: Pick<KeeperConfig, 'delayBetweenActions' | 'dryRun'>;
 }
 
-async function arbTakeLiquidation({
+export async function arbTakeLiquidation({
   pool,
   poolConfig,
   signer,
@@ -92,7 +96,7 @@ async function arbTakeLiquidation({
     );
 
     // withdraw liquidity.
-    if (poolConfig.take!.withdrawRewardLiquidity) {
+    if (poolConfig.take.withdrawRewardLiquidity) {
       const withdrawTx = await pool.withdrawLiquidity(signer, [hpbIndex]);
       await withdrawTx.verifyAndSubmit();
       await delay(delayBetweenActions);

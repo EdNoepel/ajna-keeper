@@ -1,6 +1,6 @@
 import { FungiblePool, Signer } from '@ajna-finance/sdk';
 import subgraph from './subgraph';
-import { delay, ethToWei, weiToEth } from './utils';
+import { delay, ethToWei, RequireFields, weiToEth } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
 import { getBalanceOfErc20 } from './erc20';
 import { BigNumber } from 'ethers';
@@ -8,7 +8,7 @@ import { priceToBucket } from './price';
 
 interface HandleKickParams {
   pool: FungiblePool;
-  poolConfig: PoolConfig;
+  poolConfig: RequireFields<PoolConfig, 'kick'>;
   price: number;
   signer: Signer;
   config: Pick<KeeperConfig, 'dryRun' | 'subgraphUrl' | 'delayBetweenActions'>;
@@ -62,11 +62,11 @@ export async function getLoansToKick({
       await pool.getLoan(borrower);
 
     // if loan debt is lower than configured fixed value (denominated in quote token), skip it
-    if (weiToEth(debt) < poolConfig.kick!.minDebt) continue;
+    if (weiToEth(debt) < poolConfig.kick.minDebt) continue;
 
     // Only kick loans with a neutralPrice above price (with some margin) to ensure they are profitable.
     const isNpAbovePrice =
-      weiToEth(neutralPrice) * poolConfig.kick!.priceFactor > price;
+      weiToEth(neutralPrice) * poolConfig.kick.priceFactor > price;
 
     // Only kick loans with a neutralPrice above hpb to ensure they are profitalbe.
     const isNpAboveHpb = weiToEth(neutralPrice) > hpb;
@@ -79,7 +79,8 @@ export async function getLoansToKick({
   return result;
 }
 
-interface KickParams extends Omit<HandleKickParams, 'poolConfig' | 'config'> {
+interface KickParams
+  extends Pick<HandleKickParams, 'pool' | 'signer' | 'price'> {
   loanToKick: LoanToKick;
   config: Pick<KeeperConfig, 'dryRun'>;
 }

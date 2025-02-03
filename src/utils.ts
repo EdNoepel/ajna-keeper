@@ -4,6 +4,8 @@ import { password } from '@inquirer/prompts';
 import { FungiblePool } from '@ajna-finance/sdk';
 import { KeeperConfig } from './config';
 
+export type RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+
 async function addAccountFromKeystore(
   keystorePath: string,
   provider: providers.JsonRpcProvider

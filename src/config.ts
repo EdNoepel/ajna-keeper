@@ -64,7 +64,7 @@ export interface KickSettings {
   priceFactor: number; // Once the loan price
 }
 
-interface TakeSettings {
+export interface TakeSettings {
   minCollateral: number;
   priceFactor: number;
   withdrawRewardLiquidity: boolean;
@@ -85,7 +85,7 @@ export interface PoolConfig {
 
 export interface KeeperConfig {
   ethRpcUrl: string;
-  subgraphUrl: string;
+  subgraphUrl: string; // TODO: fallback to SDK if this is not provided?
   keeperKeystore: string;
   dryRun?: boolean;
   multicallAddress?: string;

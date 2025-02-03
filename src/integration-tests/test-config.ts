@@ -4,7 +4,9 @@ import {
   PoolConfig,
   PriceOrigin,
   PriceOriginSource,
+  TakeSettings,
 } from '../config';
+import { RequireFields } from '../utils';
 
 export const HARDHAT_RPC_URL = 'http://127.0.0.1:8545';
 
@@ -67,6 +69,11 @@ export const MAINNET_CONFIG = {
         minDebt: 1,
         priceFactor: 0.9,
       } as KickSettings,
-    } as PoolConfig,
+      take: {
+        minCollateral: 0,
+        priceFactor: 1,
+        withdrawRewardLiquidity: true,
+      } as TakeSettings,
+    } as RequireFields<PoolConfig, 'kick' | 'take'>,
   },
 };
