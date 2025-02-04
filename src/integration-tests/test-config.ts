@@ -76,4 +76,27 @@ export const MAINNET_CONFIG = {
       },
     } as RequireFields<PoolConfig, 'kick' | 'take'>,
   },
+  SOL_WETH_POOL: {
+    quoteAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    collateralAddress: '0xd31a59c85ae9d8edefec411d448f90841571b89c',
+    quoteWhaleAddress: '0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E',
+    collateralWhaleAddress: '0x127452F3f9cDc0389b0Bf59ce6131aA3Bd763598',
+    poolConfig: {
+      name: 'SOL/WETH',
+      address: '0xe402b4af519c8c3a6e01949d4edb945d0d470a95',
+      price: {
+        source: PriceOriginSource.FIXED,
+        value: 0.075,
+      } as PriceOrigin,
+      kick: {
+        minDebt: 0,
+        priceFactor: 0.9,
+      },
+      take: {
+        minCollateral: 0,
+        withdrawRewardLiquidity: true,
+        priceFactor: 0.99,
+      },
+    } as RequireFields<PoolConfig, 'kick' | 'take'>,
+  },
 };

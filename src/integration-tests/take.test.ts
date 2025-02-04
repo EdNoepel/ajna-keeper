@@ -1,7 +1,7 @@
 import './subgraph-mock';
 import { getLoansToKick, handleKicks, kick } from '../kick';
 import { AjnaSDK, FungiblePool } from '@ajna-finance/sdk';
-import { MAINNET_CONFIG } from './test-config';
+import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
 import { configureAjna } from '../config';
 import {
   getProvider,
@@ -9,6 +9,7 @@ import {
   increaseTime,
   impersonateSigner,
   mine,
+  setBalance,
 } from './test-utils';
 import {
   makeGetLiquidationsFromSdk,
@@ -18,6 +19,8 @@ import {
 } from './subgraph-mock';
 import { expect } from 'chai';
 import { arbTakeLiquidation, getLiquidationsToArbTake } from '../take';
+import { Wallet } from 'ethers';
+import { ethToWei, weiToDecimaled } from '../utils';
 
 const setup = async () => {
   configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
@@ -90,9 +93,10 @@ describe.only('arbTakeLiquidation', () => {
     await setupKickedLoans(pool);
     await increaseTime(86400 * 1); // Increase timestamp by 1 day.
     const signer = await impersonateSigner(
-      MAINNET_CONFIG.WBTC_USDC_POOL.quoteWhaleAddress
+      await Wallet.fromMnemonic(USER1_MNEMONIC).getAddress()
     );
 
+    setBalance(await signer.getAddress(), ethToWei(1).toHexString());
     const liquidationsToArbTake = await getLiquidationsToArbTake({
       pool,
       poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
@@ -102,6 +106,7 @@ describe.only('arbTakeLiquidation', () => {
     });
     const initialLiquidationsSize = liquidationsToArbTake.length;
     expect(initialLiquidationsSize).to.be.greaterThan(0);
+    const firstLiquidation = liquidationsToArbTake[0];
     await arbTakeLiquidation({
       pool,
       poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
@@ -109,7 +114,10 @@ describe.only('arbTakeLiquidation', () => {
       config: {
         dryRun: false,
       },
-      liquidation: liquidationsToArbTake[0],
+      liquidation: firstLiquidation,
     });
+    const bucket = await pool.getBucketByIndex(firstLiquidation.hpbIndex);
+    const lpBalance = await bucket.lpBalance(await signer.getAddress());
+    expect(weiToDecimaled(lpBalance)).to.be.greaterThan(0);
   });
 });
