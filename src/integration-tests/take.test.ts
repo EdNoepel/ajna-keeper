@@ -20,7 +20,7 @@ import {
 import { expect } from 'chai';
 import { arbTakeLiquidation, getLiquidationsToArbTake } from '../take';
 import { Wallet } from 'ethers';
-import { ethToWei, weiToDecimaled } from '../utils';
+import { decimaledToWei, weiToDecimaled } from '../utils';
 
 const setup = async () => {
   configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
@@ -96,7 +96,7 @@ describe.only('arbTakeLiquidation', () => {
       await Wallet.fromMnemonic(USER1_MNEMONIC).getAddress()
     );
 
-    setBalance(await signer.getAddress(), ethToWei(1).toHexString());
+    setBalance(await signer.getAddress(), decimaledToWei(1).toHexString());
     const liquidationsToArbTake = await getLiquidationsToArbTake({
       pool,
       poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,

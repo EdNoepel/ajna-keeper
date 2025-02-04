@@ -4,7 +4,7 @@ import {
   PriceOriginSource,
 } from './config';
 import { getPrice as getPriceCoinGecko } from './coingecko';
-import { weiToDecimaled, ethToWei } from './utils';
+import { weiToDecimaled, decimaledToWei } from './utils';
 import { Pool } from '@ajna-finance/sdk';
 
 // Retrieves the market price using the configured source
@@ -70,6 +70,9 @@ export async function getPoolPrice(
 // }
 
 export function priceToBucket(price: number, pool: Pool): number {
-  return pool.getBucketsByPriceRange(ethToWei(price), ethToWei(price))[0].index;
+  return pool.getBucketsByPriceRange(
+    decimaledToWei(price),
+    decimaledToWei(price)
+  )[0].index;
   // return Math.round(Math.log(price) / Math.log(1.005));
 }
