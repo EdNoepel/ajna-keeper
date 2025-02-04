@@ -96,26 +96,14 @@ export function makeGetLiquidationsFromSdk(pool: FungiblePool) {
     const liquidationAuctions: GetLiquidationResponse['pool']['liquidationAuctions'] =
       [];
     for (const borrower of borrowers) {
-      console.log(`getting auction for borrower: ${borrower}`);
       try {
         const liquidation = await pool.getLiquidation(borrower);
-        const {
-          kickTime,
-          collateral,
-          debtToCover,
-          isTakeable,
-          isCollateralized,
-          price,
-          neutralPrice,
-          isSettleable,
-        } = await liquidation.getStatus();
-
-        liquidationAuctions.push({
-          borrower,
-          collateralRemaining: weiToDecimaled(collateral),
-          kickTime: parseFloat(kickTime.toString()),
-          referencePrice: weiToDecimaled(price),
-        });
+        const liquidationStatus = await liquidation.getStatus();
+        if (weiToDecimaled(liquidationStatus.collateral) > minCollateral) {
+          liquidationAuctions.push({
+            borrower,
+          });
+        }
       } catch (e) {
         console.debug(
           `Failed to find auction for borrower: ${borrower}, pool: ${pool.name}`

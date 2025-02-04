@@ -17,7 +17,7 @@ import {
   overrideGetLoans,
 } from './subgraph-mock';
 import { expect } from 'chai';
-import { getLiquidationsToArbTake } from '../take';
+import { arbTakeLiquidation, getLiquidationsToArbTake } from '../take';
 
 const setup = async () => {
   configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
@@ -69,6 +69,7 @@ describe('getLiquidationsToArbTake', () => {
     const pool = await setup();
     await setupKickedLoans(pool);
     await mine();
+    await increaseTime(86400 * 1); // Increase timestamp by 2 days.
     const liquidationsToArbTake = await getLiquidationsToArbTake({
       pool,
       poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
@@ -77,5 +78,40 @@ describe('getLiquidationsToArbTake', () => {
       },
     });
     expect(liquidationsToArbTake).to.not.be.empty;
+  });
+});
+
+describe('arbTakeLiquidation', () => {
+  before(async () => {
+    await resetHardhat();
+  });
+
+  it('Takes liquidations', async () => {
+    const pool = await setup();
+    await setupKickedLoans(pool);
+    await mine();
+    const signer = await impersonateSigner(
+      MAINNET_CONFIG.WBTC_USDC_POOL.quoteWhaleAddress
+    );
+
+    const liquidationsToArbTake = await getLiquidationsToArbTake({
+      pool,
+      poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
+      config: {
+        subgraphUrl: '',
+      },
+    });
+    const initialLiquidationsSize = liquidationsToArbTake.length;
+    expect(initialLiquidationsSize).to.be.greaterThan(0);
+    await arbTakeLiquidation({
+      pool,
+      poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
+      signer,
+      config: {
+        dryRun: false,
+        delayBetweenActions: 0,
+      },
+      liquidation: liquidationsToArbTake[0],
+    });
   });
 });
