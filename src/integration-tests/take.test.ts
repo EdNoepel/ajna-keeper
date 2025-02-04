@@ -68,7 +68,6 @@ describe('getLiquidationsToArbTake', () => {
   it.only('gets loans when there are kicked loans', async () => {
     const pool = await setup();
     await setupKickedLoans(pool);
-    await mine();
     await increaseTime(86400 * 1); // Increase timestamp by 2 days.
     const liquidationsToArbTake = await getLiquidationsToArbTake({
       pool,
@@ -81,7 +80,7 @@ describe('getLiquidationsToArbTake', () => {
   });
 });
 
-describe('arbTakeLiquidation', () => {
+describe.only('arbTakeLiquidation', () => {
   before(async () => {
     await resetHardhat();
   });
@@ -89,7 +88,7 @@ describe('arbTakeLiquidation', () => {
   it('Takes liquidations', async () => {
     const pool = await setup();
     await setupKickedLoans(pool);
-    await mine();
+    await increaseTime(86400 * 1); // Increase timestamp by 1 day.
     const signer = await impersonateSigner(
       MAINNET_CONFIG.WBTC_USDC_POOL.quoteWhaleAddress
     );
@@ -109,7 +108,6 @@ describe('arbTakeLiquidation', () => {
       signer,
       config: {
         dryRun: false,
-        delayBetweenActions: 0,
       },
       liquidation: liquidationsToArbTake[0],
     });
