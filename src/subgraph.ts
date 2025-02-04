@@ -61,5 +61,32 @@ async function getLiquidations(
   return result;
 }
 
+interface GetLendsResponse {}
+
+async function getLends(subgraphUrl: string, borrower: string) {
+  const query = gql`
+  query {
+    accounts(where: {id: "${borrower}"}) {
+      id
+      lends {
+        pool {
+          id
+          quoteToken {
+            symbol
+          }
+          collateralToken {
+            symbol
+          }
+        }
+        bucket {
+          bucketIndex
+        }
+      }
+    }
+  }`;
+  const result: GetLendsResponse = await request(subgraphUrl, query);
+  return result;
+}
+
 // Exported as default module to enable mocking in tests.
 export default { getLoans, getLiquidations };

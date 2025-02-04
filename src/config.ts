@@ -66,7 +66,7 @@ export interface KickSettings {
 
 export interface TakeSettings {
   minCollateral: number;
-  priceFactor: number;
+  priceFactor: number; // Will only arbTake when auctionPrice < hpb * priceFactor.
   withdrawRewardLiquidity: boolean;
 }
 
