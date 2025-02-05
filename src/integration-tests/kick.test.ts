@@ -8,6 +8,8 @@ import {
   resetHardhat,
   increaseTime,
   impersonateSigner,
+  depositQuoteToken,
+  takeLoan,
 } from './test-utils';
 import { makeGetLoansFromSdk, overrideGetLoans } from './subgraph-mock';
 import { expect } from 'chai';
@@ -38,50 +40,6 @@ describe('getLoansToKick', () => {
     expect(loansToKick).to.be.empty;
   });
 
-  // it.only('Returns loan when loan is in bad health', async () => {
-  //   configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
-  //   const ajna = new AjnaSDK(getProvider());
-  //   const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
-  //     MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig.address
-  //   );
-  //   overrideGetLoans(makeGetLoansFromSdk(pool, 10));
-
-  //   // Create kickable loan
-  //   console.log('impersonating account');
-  //   const signer = await impersonateSigner(
-  //     MAINNET_CONFIG.WBTC_USDC_POOL.collateralWhaleAddress
-  //   );
-  //   console.log('Approving collateral');
-  //   await setBalance(
-  //     MAINNET_CONFIG.WBTC_USDC_POOL.collateralWhaleAddress,
-  //     '0x10000000000000000000000'
-  //   );
-  //   const approveTx = await pool.collateralApprove(
-  //     signer,
-  //     numberToWad(1)
-  //     // BigNumber.from('0x1000000000')
-  //   );
-  //   await approveTx.verifyAndSubmit();
-  //   console.group('drawing debt');
-  //   const drawTx = await pool.drawDebt(
-  //     signer,
-  //     numberToWad(51),
-  //     numberToWad(0.001)
-  //     // BigNumber.from('0x100000000'),
-  //     // BigNumber.from('0x100000000')
-  //   );
-  //   const response = await drawTx.verifyAndSubmitResponse();
-  //   const loansToKick = await getLoansToKick({
-  //     pool,
-  //     poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
-  //     price: 0,
-  //     config: {
-  //       subgraphUrl: '',
-  //     },
-  //   });
-  //   expect(loansToKick).to.not.be.empty;
-  // });
-
   it('Returns loan when loan is in bad health', async () => {
     configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
     const ajna = new AjnaSDK(getProvider());
@@ -101,6 +59,30 @@ describe('getLoansToKick', () => {
       },
     });
     expect(loansToKick).to.not.be.empty;
+  });
+
+  it.only('Returns loan when loan is in bad health', async () => {
+    configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
+    const ajna = new AjnaSDK(getProvider());
+    const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
+      MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig.address
+    );
+    overrideGetLoans(makeGetLoansFromSdk(pool));
+
+    await depositQuoteToken(
+      pool,
+      MAINNET_CONFIG.WBTC_USDC_POOL.quoteWhaleAddress,
+      1,
+      0.07
+    );
+    console.log('deposit successful');
+    await takeLoan(
+      pool,
+      MAINNET_CONFIG.WBTC_USDC_POOL.collateralWhaleAddress,
+      14,
+      1
+    );
+    console.log('got this far');
   });
 });
 

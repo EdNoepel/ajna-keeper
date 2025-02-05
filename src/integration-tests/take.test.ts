@@ -68,7 +68,7 @@ describe('getLiquidationsToArbTake', () => {
     expect(liquidationsToArbTake).to.be.empty;
   });
 
-  it.only('gets loans when there are kicked loans', async () => {
+  it('gets loans when there are kicked loans', async () => {
     const pool = await setup();
     await setupKickedLoans(pool);
     await increaseTime(86400 * 1); // Increase timestamp by 2 days.
@@ -83,7 +83,7 @@ describe('getLiquidationsToArbTake', () => {
   });
 });
 
-describe.only('arbTakeLiquidation', () => {
+describe('arbTakeLiquidation', () => {
   before(async () => {
     await resetHardhat();
   });
