@@ -1,7 +1,7 @@
 import './subgraph-mock';
 import { getLoansToKick, kick } from '../kick';
 import { AjnaSDK, FungiblePool } from '@ajna-finance/sdk';
-import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
+import { MAINNET_CONFIG } from './test-config';
 import { configureAjna } from '../config';
 import {
   getProvider,
@@ -13,13 +13,9 @@ import {
 import { depositQuoteToken, drawDebt } from './loan-helpers';
 import { makeGetLoansFromSdk, overrideGetLoans } from './subgraph-mock';
 import { expect } from 'chai';
-import { Wallet } from 'ethers';
-
-// import spies from 'chai-spies';
-// chai.use(spies);
 
 describe('getLoansToKick', () => {
-  before(async () => {
+  beforeEach(async () => {
     await resetHardhat();
   });
 
@@ -90,8 +86,8 @@ describe('getLoansToKick', () => {
   });
 });
 
-describe.only('kick', () => {
-  before(async () => {
+describe('kick', () => {
+  beforeEach(async () => {
     await resetHardhat();
   });
 
@@ -123,7 +119,6 @@ describe.only('kick', () => {
         subgraphUrl: '',
       },
     });
-
     const signer = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
     );
@@ -131,7 +126,7 @@ describe.only('kick', () => {
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2,
       '100000000000000000000'
     );
-    console.log(`loans: ${loansToKick}`);
+
     await kick({
       pool,
       signer,

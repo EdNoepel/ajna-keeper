@@ -157,7 +157,6 @@ export async function kick({
     console.log(
       `Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`
     );
-    // const wrappedTransaction = await pool.kick(signer, borrower, limitIndex);
     const kickTx = await pool.kick(signer, borrower, limitIndex);
     await kickTx.verifyAndSubmit();
     console.log(
