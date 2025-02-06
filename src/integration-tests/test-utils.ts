@@ -4,7 +4,11 @@ import { FungiblePool } from '@ajna-finance/sdk';
 import { getDecimalsErc20 } from '../erc20';
 import { decimaledToWei } from '../utils';
 
-export const getProvider = () => new providers.JsonRpcProvider(HARDHAT_RPC_URL);
+let _provider: providers.JsonRpcProvider | undefined = undefined;
+export const getProvider = () => {
+  if (!_provider) _provider = new providers.JsonRpcProvider(HARDHAT_RPC_URL);
+  return _provider;
+};
 
 export const resetHardhat = () =>
   getProvider().send('hardhat_reset', [
@@ -22,7 +26,7 @@ export const setBalance = (address: string, balance: string) =>
 export const getBalance = (address: string) =>
   getProvider().send('eth_getBalance', [address]);
 
-const impersonateAccount = (address: string) =>
+export const impersonateAccount = (address: string) =>
   getProvider().send('hardhat_impersonateAccount', [address]);
 
 export const impersonateSigner = async (address: string) => {
@@ -48,54 +52,4 @@ export const increaseTime = async (seconds: number) => {
   await getProvider().send('evm_setNextBlockTimestamp', [nextTimestamp]);
   await mine();
   return await latestBlockTimestamp();
-};
-
-export const depositQuoteToken = async (
-  pool: FungiblePool,
-  ownerAddress: string,
-  amount: number,
-  price: number
-) => {
-  const signer = await impersonateSigner(ownerAddress);
-  const decimals = await getDecimalsErc20(signer, pool.quoteAddress);
-  const priceBn = decimaledToWei(price);
-  const bucket = await pool.getBucketByPrice(priceBn);
-  const amountBn = decimaledToWei(amount, decimals);
-
-  console.log(
-    `approving helper. signer: ${await signer.getAddress()} amt: ${amountBn}`
-  );
-
-  const qApproveTx = await pool.quoteApproveHelper(signer, amountBn);
-  await qApproveTx.verifyAndSubmit();
-
-  console.log('approving transferror');
-  const approveHelperTx = await pool.approveLenderHelperLPTransferor(signer);
-  await approveHelperTx.verifyAndSubmit();
-
-  console.log('adding quote token');
-  const addTx = await bucket.addQuoteToken(signer, amountBn);
-  await addTx.verifyAndSubmit();
-};
-
-export const takeLoan = async (
-  pool: FungiblePool,
-  ownerAddress: string,
-  amountToBorrow: number,
-  collateralToPledge: number
-) => {
-  const signer = await impersonateSigner(ownerAddress);
-  const collateralDecimals = await getDecimalsErc20(
-    signer,
-    pool.collateralAddress
-  );
-  const collateralAmt = decimaledToWei(collateralToPledge, collateralDecimals);
-
-  const qApproveTx = await pool.collateralApprove(signer, collateralAmt);
-  await qApproveTx.verifyAndSubmit();
-
-  const quoteDecimals = await getDecimalsErc20(signer, pool.quoteAddress);
-  const borrowAmt = decimaledToWei(amountToBorrow, quoteDecimals);
-  const drawTx = await pool.drawDebt(signer, borrowAmt, collateralAmt);
-  await drawTx.verifyAndSubmit();
 };

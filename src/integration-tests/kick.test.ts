@@ -61,7 +61,7 @@ describe('getLoansToKick', () => {
     expect(loansToKick).to.not.be.empty;
   });
 
-  it.only('Returns loan when loan is in bad health', async () => {
+  it('Returns loan when loan is in bad health', async () => {
     configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
     const ajna = new AjnaSDK(getProvider());
     const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
