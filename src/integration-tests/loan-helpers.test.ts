@@ -35,7 +35,7 @@ describe('depositQuoteToken', () => {
   });
 });
 
-describe.only('drawDebt', () => {
+describe('drawDebt', () => {
   before(async () => {
     await resetHardhat();
     const pool = await setup(MAINNET_CONFIG.SOL_WETH_POOL.poolConfig.address);

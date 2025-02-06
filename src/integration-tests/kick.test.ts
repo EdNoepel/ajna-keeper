@@ -1,18 +1,19 @@
 import './subgraph-mock';
 import { getLoansToKick, kick } from '../kick';
 import { AjnaSDK, FungiblePool } from '@ajna-finance/sdk';
-import { MAINNET_CONFIG } from './test-config';
+import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
 import { configureAjna } from '../config';
 import {
   getProvider,
   resetHardhat,
   increaseTime,
   impersonateSigner,
-  depositQuoteToken,
-  takeLoan,
+  setBalance,
 } from './test-utils';
+import { depositQuoteToken, drawDebt } from './loan-helpers';
 import { makeGetLoansFromSdk, overrideGetLoans } from './subgraph-mock';
 import { expect } from 'chai';
+import { Wallet } from 'ethers';
 
 // import spies from 'chai-spies';
 // chai.use(spies);
@@ -26,13 +27,26 @@ describe('getLoansToKick', () => {
     configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
     const ajna = new AjnaSDK(getProvider());
     const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
-      MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig.address
+      MAINNET_CONFIG.SOL_WETH_POOL.poolConfig.address
     );
     overrideGetLoans(makeGetLoansFromSdk(pool));
+    await depositQuoteToken({
+      pool,
+      owner: MAINNET_CONFIG.SOL_WETH_POOL.quoteWhaleAddress,
+      amount: 1,
+      price: 0.07,
+    });
+    await drawDebt({
+      pool,
+      owner: MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress,
+      amountToBorrow: 0.9,
+      collateralToPledge: 14,
+    });
+
     const loansToKick = await getLoansToKick({
       pool,
-      poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
-      price: 1,
+      poolConfig: MAINNET_CONFIG.SOL_WETH_POOL.poolConfig,
+      price: 0.01,
       config: {
         subgraphUrl: '',
       },
@@ -44,49 +58,39 @@ describe('getLoansToKick', () => {
     configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
     const ajna = new AjnaSDK(getProvider());
     const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
-      MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig.address
+      MAINNET_CONFIG.SOL_WETH_POOL.poolConfig.address
     );
     overrideGetLoans(makeGetLoansFromSdk(pool));
-
-    await increaseTime(3.154e7 * 2); // Increase timestamp by 10 years.
+    await depositQuoteToken({
+      pool,
+      owner: MAINNET_CONFIG.SOL_WETH_POOL.quoteWhaleAddress,
+      amount: 1,
+      price: 0.07,
+    });
+    await drawDebt({
+      pool,
+      owner: MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress,
+      amountToBorrow: 0.9,
+      collateralToPledge: 14,
+    });
+    await increaseTime(3.154e7 * 2);
 
     const loansToKick = await getLoansToKick({
       pool,
-      poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
+      poolConfig: MAINNET_CONFIG.SOL_WETH_POOL.poolConfig,
       price: 0,
       config: {
         subgraphUrl: '',
       },
     });
-    expect(loansToKick).to.not.be.empty;
-  });
-
-  it('Returns loan when loan is in bad health', async () => {
-    configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
-    const ajna = new AjnaSDK(getProvider());
-    const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
-      MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig.address
+    expect(loansToKick.length).equals(1);
+    expect(loansToKick[0].borrower).equals(
+      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress
     );
-    overrideGetLoans(makeGetLoansFromSdk(pool));
-
-    await depositQuoteToken(
-      pool,
-      MAINNET_CONFIG.WBTC_USDC_POOL.quoteWhaleAddress,
-      1,
-      0.07
-    );
-    console.log('deposit successful');
-    await takeLoan(
-      pool,
-      MAINNET_CONFIG.WBTC_USDC_POOL.collateralWhaleAddress,
-      14,
-      1
-    );
-    console.log('got this far');
   });
 });
 
-describe('kick', () => {
+describe.only('kick', () => {
   before(async () => {
     await resetHardhat();
   });
@@ -95,31 +99,51 @@ describe('kick', () => {
     configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
     const ajna = new AjnaSDK(getProvider());
     const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
-      MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig.address
-    );
-    const signer = await impersonateSigner(
-      MAINNET_CONFIG.WBTC_USDC_POOL.quoteWhaleAddress
+      MAINNET_CONFIG.SOL_WETH_POOL.poolConfig.address
     );
     overrideGetLoans(makeGetLoansFromSdk(pool));
-    await increaseTime(3.154e7 * 2); // Increase timestamp by 10 years.
+    await depositQuoteToken({
+      pool,
+      owner: MAINNET_CONFIG.SOL_WETH_POOL.quoteWhaleAddress,
+      amount: 1,
+      price: 0.07,
+    });
+    await drawDebt({
+      pool,
+      owner: MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress,
+      amountToBorrow: 0.9,
+      collateralToPledge: 14,
+    });
+    await increaseTime(3.154e7 * 2);
     const loansToKick = await getLoansToKick({
       pool,
-      poolConfig: MAINNET_CONFIG.WBTC_USDC_POOL.poolConfig,
-      price: 1,
+      poolConfig: MAINNET_CONFIG.SOL_WETH_POOL.poolConfig,
+      price: 0,
       config: {
         subgraphUrl: '',
       },
     });
-    const loanToKick = loansToKick[0];
 
+    const signer = await impersonateSigner(
+      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
+    );
+    setBalance(
+      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2,
+      '100000000000000000000'
+    );
+    console.log(`loans: ${loansToKick}`);
     await kick({
       pool,
       signer,
-      loanToKick,
+      loanToKick: loansToKick[0],
       config: {
         dryRun: false,
       },
-      price: 1,
+      price: 0,
     });
+    const loan = await pool.getLoan(
+      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress
+    );
+    expect(loan.isKicked).to.be.true;
   });
 });
