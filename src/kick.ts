@@ -14,14 +14,16 @@ import {
   getDecimalsErc20,
 } from './erc20';
 import { BigNumber } from 'ethers';
-import { clear } from 'console';
+import { getPrice } from './price';
 
 interface HandleKickParams {
   pool: FungiblePool;
   poolConfig: RequireFields<PoolConfig, 'kick'>;
-  price: number;
   signer: Signer;
-  config: Pick<KeeperConfig, 'dryRun' | 'subgraphUrl' | 'delayBetweenActions'>;
+  config: Pick<
+    KeeperConfig,
+    'dryRun' | 'subgraphUrl' | 'delayBetweenActions' | 'pricing'
+  >;
 }
 
 const LIQUIDATION_BOND_MARGIN: number = 0.01; // How much extra margin to allow for liquidationBond. Expressed as a factor.
@@ -29,17 +31,15 @@ const LIQUIDATION_BOND_MARGIN: number = 0.01; // How much extra margin to allow 
 export async function handleKicks({
   pool,
   poolConfig,
-  price,
   signer,
   config,
 }: HandleKickParams) {
   for await (const loanToKick of getLoansToKick({
     pool,
     poolConfig,
-    price,
     config,
   })) {
-    await kick({ signer, pool, loanToKick, config, price });
+    await kick({ signer, pool, loanToKick, config });
     await delay(config.delayBetweenActions);
   }
   await clearAllowances({ pool, signer });
@@ -49,18 +49,18 @@ interface LoanToKick {
   borrower: string;
   liquidationBond: BigNumber;
   estimatedRemainingBond: BigNumber;
+  limitPrice: number;
 }
 
 interface GetLoansToKickParams
-  extends Pick<HandleKickParams, 'pool' | 'poolConfig' | 'price'> {
-  config: Pick<KeeperConfig, 'subgraphUrl'>;
+  extends Pick<HandleKickParams, 'pool' | 'poolConfig'> {
+  config: Pick<KeeperConfig, 'subgraphUrl' | 'pricing'>;
 }
 
 export async function* getLoansToKick({
   pool,
   config,
   poolConfig,
-  price,
 }: GetLoansToKickParams): AsyncGenerator<LoanToKick> {
   const { subgraphUrl } = config;
   const { loans } = await subgraph.getLoans(subgraphUrl, pool.poolAddress);
@@ -81,7 +81,8 @@ export async function* getLoansToKick({
   for (let i = 0; i < borrowersSortedByBond.length; i++) {
     // TODO: query price here.
     const borrower = borrowersSortedByBond[i];
-    const { lup, hpb } = await pool.getPrices();
+    const poolPrices = await pool.getPrices();
+    const { lup, hpb } = poolPrices;
     const { thresholdPrice, liquidationBond, debt, neutralPrice } =
       await pool.getLoan(borrower);
     const estimatedRemainingBond = liquidationBond.add(
@@ -104,14 +105,6 @@ export async function* getLoansToKick({
       continue;
     }
 
-    // Only kick loans with a neutralPrice above price (with some margin) to ensure they are profitable.
-    if (weiToDecimaled(neutralPrice) * poolConfig.kick.priceFactor < price) {
-      console.debug(
-        `Not kicking loan since (NP * Factor < Price). pool: ${pool.name}, borrower: ${borrower}, NP: ${neutralPrice}, Price: ${price}`
-      );
-      continue;
-    }
-
     // Only kick loans with a neutralPrice above hpb to ensure they are profitalbe.
     if (neutralPrice.lt(hpb)) {
       console.debug(
@@ -120,10 +113,27 @@ export async function* getLoansToKick({
       continue;
     }
 
+    // Only kick loans with a neutralPrice above price (with some margin) to ensure they are profitable.
+    const limitPrice = await getPrice(
+      poolConfig.price,
+      config.pricing.coinGeckoApiKey,
+      poolPrices
+    );
+    if (
+      weiToDecimaled(neutralPrice) * poolConfig.kick.priceFactor <
+      limitPrice
+    ) {
+      console.debug(
+        `Not kicking loan since (NP * Factor < Price). pool: ${pool.name}, borrower: ${borrower}, NP: ${neutralPrice}, Price: ${price}`
+      );
+      continue;
+    }
+
     yield {
       borrower,
       liquidationBond,
       estimatedRemainingBond,
+      limitPrice,
     };
   }
 }
@@ -170,21 +180,14 @@ async function approveBalanceForLoanToKick({
   return true;
 }
 
-interface KickParams
-  extends Pick<HandleKickParams, 'pool' | 'signer' | 'price'> {
+interface KickParams extends Pick<HandleKickParams, 'pool' | 'signer'> {
   loanToKick: LoanToKick;
   config: Pick<KeeperConfig, 'dryRun'>;
 }
 
-export async function kick({
-  pool,
-  signer,
-  config,
-  loanToKick,
-  price,
-}: KickParams) {
+export async function kick({ pool, signer, config, loanToKick }: KickParams) {
   const { dryRun } = config;
-  const { borrower, liquidationBond } = loanToKick;
+  const { borrower, liquidationBond, limitPrice } = loanToKick;
 
   if (dryRun) {
     console.debug(
@@ -209,8 +212,8 @@ export async function kick({
 
     console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}`);
     const limitIndex =
-      price > 0
-        ? pool.getBucketByPrice(decimaledToWei(price)).index
+      limitPrice > 0
+        ? pool.getBucketByPrice(decimaledToWei(limitPrice)).index
         : undefined;
     const kickTx = await pool.kick(signer, borrower, limitIndex);
     await kickTx.verifyAndSubmit();

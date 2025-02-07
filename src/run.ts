@@ -8,8 +8,6 @@ import {
 } from './utils';
 import { handleKicks } from './kick';
 import { handleArbTakes } from './take';
-import { getPrice } from './price';
-import { handleCollect } from './collect';
 
 type PoolMap = Map<string, FungiblePool>;
 
@@ -56,17 +54,11 @@ async function kickPoolsLoop({ poolMap, config, signer }: KeepPoolParams) {
   while (true) {
     for (const poolConfig of poolsWithKickSettings) {
       const pool = poolMap.get(poolConfig.address)!;
-      const price = await getPrice(
-        pool,
-        poolConfig.price,
-        config.pricing.coinGeckoApiKey
-      );
       await handleKicks({
         pool,
         poolConfig,
         signer,
         config,
-        price, // TODO: move getPrice into kick.
       });
     }
     await delay(config.delayBetweenRuns);
@@ -78,11 +70,6 @@ async function arbTakePoolsLoop({ poolMap, config, signer }: KeepPoolParams) {
   while (true) {
     for (const poolConfig of poolsWithTakeSettings) {
       const pool = poolMap.get(poolConfig.address)!;
-      const price = await getPrice(
-        pool,
-        poolConfig.price,
-        config.pricing.coinGeckoApiKey
-      );
       await handleArbTakes({
         pool,
         poolConfig,
