@@ -8,7 +8,6 @@ import {
   resetHardhat,
   increaseTime,
   impersonateSigner,
-  mine,
   setBalance,
 } from './test-utils';
 import {
@@ -108,7 +107,7 @@ describe('getLiquidationsToArbTake', () => {
   });
 });
 
-describe.only('arbTakeLiquidation', () => {
+describe('arbTakeLiquidation', () => {
   beforeEach(async () => {
     await resetHardhat();
   });
