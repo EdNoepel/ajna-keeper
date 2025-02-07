@@ -5,7 +5,7 @@ import {
 } from './config';
 import { getPrice as getPriceCoinGecko } from './coingecko';
 import { weiToDecimaled, decimaledToWei } from './utils';
-import { Pool } from '@ajna-finance/sdk';
+import { FungiblePool, Pool } from '@ajna-finance/sdk';
 
 // Retrieves the market price using the configured source
 export async function getPrice(
@@ -62,17 +62,4 @@ export async function getPoolPrice(
     );
   }
   return weiToDecimaled(price);
-}
-
-// function bucketToPrice(index: number) {
-//   // Note: Bucket index range is [-3232, 4155]
-//   return 1.005 ^ (index);
-// }
-
-export function priceToBucket(price: number, pool: Pool): number {
-  return pool.getBucketsByPriceRange(
-    decimaledToWei(price),
-    decimaledToWei(price)
-  )[0].index;
-  // return Math.round(Math.log(price) / Math.log(1.005));
 }

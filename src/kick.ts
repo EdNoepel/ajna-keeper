@@ -4,7 +4,6 @@ import { delay, decimaledToWei, RequireFields, weiToDecimaled } from './utils';
 import { KeeperConfig, PoolConfig } from './config';
 import { getBalanceOfErc20, getDecimalsErc20 } from './erc20';
 import { BigNumber } from 'ethers';
-import { priceToBucket } from './price';
 
 interface HandleKickParams {
   pool: FungiblePool;
@@ -153,7 +152,10 @@ export async function kick({
     const approveTx = await pool.quoteApprove(signer, bondWithMargin);
     await approveTx.verifyAndSubmit();
 
-    const limitIndex = !!price ? priceToBucket(price, pool) : undefined;
+    const limitIndex =
+      price > 0
+        ? pool.getBucketByPrice(decimaledToWei(price)).index
+        : undefined;
     console.log(
       `Sending kick transaction. pool: ${pool.name}, borrower: ${borrower}`
     );
