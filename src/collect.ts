@@ -3,13 +3,32 @@ import subgraph, { GetRewardsResponse } from './subgraph';
 import { KeeperConfig, PoolConfig } from './config';
 import { RequireFields } from './utils';
 
-const { getRewards } = subgraph;
-
 interface HandleRewardsParams {
   pool: FungiblePool;
   poolConfig: RequireFields<PoolConfig, 'collect'>;
   signer: Signer;
   config: Pick<KeeperConfig, 'subgraphUrl'>;
+}
+
+/**
+ Subscribe to BucketTakeLPAwarded(taker, kicker, lpAwardedTaker, lpAwardedKicker)
+  on BucketTakeLPAwarded: try to collect LP. If LP is locked, subscribe to AuctionSettle.
+
+ Subscribe to Kick(borrower, debt, collateral, bond)
+  on Kick: try to collect.
+
+ Subscribe to AuctionSettle(borrower, collateral)
+ */
+
+async function getCollectRewards({
+  pool,
+  poolConfig,
+  signer,
+  config,
+}: HandleRewardsParams) {
+  const poolContract = pool.contract.connect(signer);
+  poolContract.filters.KickEvent();
+  contract.queryFilter();
 }
 
 export async function handleCollect({
@@ -19,7 +38,7 @@ export async function handleCollect({
   config,
 }: HandleRewardsParams) {
   const borrower = await signer.getAddress();
-  const rewards = await getRewards(
+  const rewards = await subgraph.getRewards(
     config.subgraphUrl,
     pool.poolAddress,
     borrower

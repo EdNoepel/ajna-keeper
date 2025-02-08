@@ -86,7 +86,7 @@ export interface PoolConfig {
   kick?: KickSettings;
   take?: TakeSettings;
   dexSettings?: DexConfig; // Only set this value if you want winnings sent to dex and traded for L2 token.
-  collect?: CollectSettings;
+  collectBond?: boolean;
 }
 
 export interface KeeperConfig {

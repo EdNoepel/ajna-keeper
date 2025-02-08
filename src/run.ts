@@ -8,6 +8,7 @@ import {
 } from './utils';
 import { handleKicks } from './kick';
 import { handleArbTakes } from './take';
+import { collectBondFromPool } from './collect-bond';
 
 type PoolMap = Map<string, FungiblePool>;
 
@@ -23,6 +24,7 @@ export async function startKeeperFromConfig(config: KeeperConfig) {
 
   kickPoolsLoop({ poolMap, config, signer });
   arbTakePoolsLoop({ poolMap, config, signer });
+  collectBondLoop({ poolMap, config, signer });
 }
 
 async function getPoolsFromConfig(
@@ -76,6 +78,19 @@ async function arbTakePoolsLoop({ poolMap, config, signer }: KeepPoolParams) {
         signer,
         config,
       });
+    }
+    await delay(config.delayBetweenRuns);
+  }
+}
+
+async function collectBondLoop({ poolMap, config, signer }: KeepPoolParams) {
+  const poolsWithCollectBondSettings = config.pools.filter(
+    ({ collectBond }) => !!collectBond
+  );
+  while (true) {
+    for (const poolConfig of poolsWithCollectBondSettings) {
+      const pool = poolMap.get(poolConfig.address)!;
+      await collectBondFromPool({ pool, signer });
     }
     await delay(config.delayBetweenRuns);
   }
