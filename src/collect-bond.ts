@@ -8,6 +8,7 @@ interface CollectBondParams {
 }
 
 export async function collectBondFromPool({ pool, signer }: CollectBondParams) {
+  // Note: this does not settleAuctions.
   const signerAddress = await signer.getAddress();
   const { claimable, locked } = await pool.kickerInfo(signerAddress);
   if (locked.eq(BigNumber.from('0')) && claimable.gt(BigNumber.from('0'))) {
