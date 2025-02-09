@@ -5,10 +5,15 @@ import {
   indexToPrice,
   wdiv,
   min,
+  ERC20,
 } from '@ajna-finance/sdk';
 import { KeeperConfig, PoolConfig, TokenToCollect } from './config';
 import { TypedListener } from '@ajna-finance/sdk/dist/types/contracts/common';
-import { BucketTakeLPAwardedEvent } from '@ajna-finance/sdk/dist/types/contracts/ERC20Pool';
+import {
+  BucketTakeLPAwardedEvent,
+  BucketTakeLPAwardedEventFilter,
+  ERC20Pool,
+} from '@ajna-finance/sdk/dist/types/contracts/ERC20Pool';
 import { BigNumber } from 'ethers';
 import { decimaledToWei, RequireFields, weiToDecimaled } from './utils';
 
@@ -17,6 +22,9 @@ import { decimaledToWei, RequireFields, weiToDecimaled } from './utils';
  */
 export class LpCollector {
   public lpMap: Map<number, BigNumber> = new Map(); // Map<bucketIndexString, rewardLp>
+  public poolContract: ERC20Pool;
+  public kickerAwardEvt: Promise<BucketTakeLPAwardedEventFilter>;
+  public takerAwardEvt: Promise<BucketTakeLPAwardedEventFilter>;
 
   private started: boolean = false;
 
@@ -24,16 +32,39 @@ export class LpCollector {
     private pool: FungiblePool,
     private signer: Signer,
     private poolConfig: Required<Pick<PoolConfig, 'collectLpReward'>>
-  ) {}
+  ) {
+    const poolContract = ERC20Pool__factory.connect(
+      this.pool.poolAddress,
+      this.signer
+    );
+    this.poolContract = poolContract;
+    this.takerAwardEvt = (async () => {
+      const signerAddress = await this.signer.getAddress();
+      return poolContract.filters.BucketTakeLPAwarded(signerAddress);
+    })();
+    this.kickerAwardEvt = (async () => {
+      const signerAddress = await this.signer.getAddress();
+      return poolContract.filters.BucketTakeLPAwarded(undefined, signerAddress);
+    })();
+  }
 
   public async startSubscription() {
     if (!this.started) {
-      await this._subscribeToLpRewards();
+      await this.subscribeToLpRewards();
       this.started = true;
     }
   }
 
+  public async stopSubscription() {
+    if (this.started) {
+      this.stopSubscriptionToLpRewards();
+      this.started = false;
+    }
+  }
+
   public async collectLpRewards() {
+    if (!this.started)
+      throw new Error('Must start subscriptions before collecting rewards');
     const lpMapEntries = Array.from(this.lpMap.entries()).filter(
       ([bucketIndex, rewardLp]) => rewardLp.gt(BigNumber.from('0'))
     );
@@ -97,21 +128,14 @@ export class LpCollector {
     return BigNumber.from('0');
   }
 
-  private async _subscribeToLpRewards() {
-    const poolContract = ERC20Pool__factory.connect(
-      this.pool.poolAddress,
-      this.signer
-    );
-    const signerAddress = await this.signer.getAddress();
-    const takerAwardEvt =
-      poolContract.filters.BucketTakeLPAwarded(signerAddress);
-    const kickerAwardEvt = poolContract.filters.BucketTakeLPAwarded(
-      undefined,
-      signerAddress
-    );
-    const awardEvt = poolContract.filters.BucketTakeLPAwarded();
-    poolContract.on(takerAwardEvt, this.onTakerAwardEvent);
-    poolContract.on(kickerAwardEvt, this.onKickerAwardEvent);
+  private async subscribeToLpRewards() {
+    this.poolContract.on(await this.takerAwardEvt, this.onTakerAwardEvent);
+    this.poolContract.on(await this.kickerAwardEvt, this.onKickerAwardEvent);
+  }
+
+  private async stopSubscriptionToLpRewards() {
+    this.poolContract.off(await this.takerAwardEvt, this.onTakerAwardEvent);
+    this.poolContract.off(await this.kickerAwardEvt, this.onKickerAwardEvent);
   }
 
   private onTakerAwardEvent: TypedListener<BucketTakeLPAwardedEvent> = async (
