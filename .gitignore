@@ -9,6 +9,7 @@
 # misc
 .DS_Store
 config*.json
+config*.ts
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

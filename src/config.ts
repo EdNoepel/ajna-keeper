@@ -13,9 +13,9 @@ export interface AjnaConfigParams {
   poolUtils: Address;
   positionManager: Address;
   ajnaToken: Address;
-  grantFund: Address;
-  burnWrapper: Address;
-  lenderHelper: Address;
+  grantFund?: Address;
+  burnWrapper?: Address;
+  lenderHelper?: Address;
 }
 
 interface PricingApiKey {
@@ -116,11 +116,16 @@ export interface KeeperConfig {
 
 export async function readConfigFile(filePath: string): Promise<KeeperConfig> {
   try {
-    const absolutePath = path.resolve(filePath);
-    const fileContents = await fs.readFile(absolutePath, 'utf-8');
-    const parsedFile = JSON.parse(fileContents);
-    assertIsValidConfig(parsedFile);
-    return parsedFile;
+    if (filePath.endsWith('.ts')) {
+      const imported = await import('../' + filePath);
+      return imported.default;
+    } else {
+      const absolutePath = path.resolve(filePath);
+      const fileContents = await fs.readFile(absolutePath, 'utf-8');
+      const parsedFile = JSON.parse(fileContents);
+      assertIsValidConfig(parsedFile);
+      return parsedFile;
+    }
   } catch (error) {
     console.error('Error reading config file:', error);
     process.exit(1);
@@ -155,8 +160,8 @@ export function configureAjna(ajnaConfig: AjnaConfigParams): void {
     ajnaConfig.poolUtils,
     ajnaConfig.positionManager,
     ajnaConfig.ajnaToken,
-    ajnaConfig.grantFund,
-    ajnaConfig.burnWrapper,
-    ajnaConfig.lenderHelper
+    ajnaConfig.grantFund ?? '',
+    ajnaConfig.burnWrapper ?? '',
+    ajnaConfig.lenderHelper ?? ''
   );
 }

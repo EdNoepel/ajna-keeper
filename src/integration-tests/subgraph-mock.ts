@@ -1,16 +1,10 @@
-import {
-  ERC20Pool__factory,
-  FungiblePool,
-  Loan,
-  PoolInfoUtils__factory,
-} from '@ajna-finance/sdk';
+import { ERC20Pool__factory, FungiblePool, Loan } from '@ajna-finance/sdk';
 import subgraphModule, {
   GetLiquidationResponse,
   GetLoanResponse,
 } from '../subgraph';
 import { getProvider } from './test-utils';
 import { weiToDecimaled } from '../utils';
-import { EventFilter } from 'ethers';
 import { MAINNET_CONFIG } from './test-config';
 
 export function overrideGetLoans(
