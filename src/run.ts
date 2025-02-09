@@ -9,6 +9,7 @@ import {
 import { handleKicks } from './kick';
 import { handleArbTakes } from './take';
 import { collectBondFromPool } from './collect-bond';
+import { LpCollector } from './collect-lp';
 
 type PoolMap = Map<string, FungiblePool>;
 
@@ -25,6 +26,7 @@ export async function startKeeperFromConfig(config: KeeperConfig) {
   kickPoolsLoop({ poolMap, config, signer });
   arbTakePoolsLoop({ poolMap, config, signer });
   collectBondLoop({ poolMap, config, signer });
+  collectLpRewardsLoop({ poolMap, config, signer });
 }
 
 async function getPoolsFromConfig(
@@ -67,6 +69,12 @@ async function kickPoolsLoop({ poolMap, config, signer }: KeepPoolParams) {
   }
 }
 
+function hasKickSettings(
+  config: PoolConfig
+): config is RequireFields<PoolConfig, 'kick'> {
+  return !!config.kick;
+}
+
 async function arbTakePoolsLoop({ poolMap, config, signer }: KeepPoolParams) {
   const poolsWithTakeSettings = config.pools.filter(hasTakeSettings);
   while (true) {
@@ -83,6 +91,12 @@ async function arbTakePoolsLoop({ poolMap, config, signer }: KeepPoolParams) {
   }
 }
 
+function hasTakeSettings(
+  config: PoolConfig
+): config is RequireFields<PoolConfig, 'take'> {
+  return !!config.take;
+}
+
 async function collectBondLoop({ poolMap, config, signer }: KeepPoolParams) {
   const poolsWithCollectBondSettings = config.pools.filter(
     ({ collectBond }) => !!collectBond
@@ -96,20 +110,32 @@ async function collectBondLoop({ poolMap, config, signer }: KeepPoolParams) {
   }
 }
 
-function hasKickSettings(
-  config: PoolConfig
-): config is RequireFields<PoolConfig, 'kick'> {
-  return !!config.kick;
+async function collectLpRewardsLoop({
+  poolMap,
+  config,
+  signer,
+}: KeepPoolParams) {
+  const poolsWithCollectLpSettings = config.pools.filter(hasCollectLpSettings);
+  const lpCollectors: Map<string, LpCollector> = new Map();
+
+  for (const poolConfig of poolsWithCollectLpSettings) {
+    const pool = poolMap.get(poolConfig.address)!;
+    const collector = new LpCollector(pool, signer, poolConfig);
+    collector.startSubscription();
+  }
+
+  while (true) {
+    for (const poolConfig of poolsWithCollectLpSettings) {
+      const pool = poolMap.get(poolConfig.address)!;
+      const collector = lpCollectors.get(poolConfig.address)!;
+      await collector.collectLpRewards();
+    }
+    await delay(config.delayBetweenRuns);
+  }
 }
 
-function hasTakeSettings(
+function hasCollectLpSettings(
   config: PoolConfig
-): config is RequireFields<PoolConfig, 'take'> {
-  return !!config.take;
+): config is RequireFields<PoolConfig, 'collectLpReward'> {
+  return !!config.collectLpReward;
 }
-
-// function hasCollectSettings(
-//   config: PoolConfig
-// ): config is RequireFields<PoolConfig, 'collect'> {
-//   return !!config.collect;
-// }

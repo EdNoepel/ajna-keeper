@@ -104,7 +104,7 @@ describe('collectBondFromPool', () => {
     expect(amtWithdraw).equals(0);
   });
 
-  it.only('Collects bond when a bond is available', async () => {
+  it('Collects bond when a bond is available', async () => {
     const pool = await setup();
     const signer = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2

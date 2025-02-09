@@ -79,6 +79,16 @@ interface DexConfig {
   fee: FeeAmount;
 }
 
+export enum TokenToCollect {
+  QUOTE = 'quote',
+  COLLATERAL = 'collateral',
+}
+
+interface CollectLpRewardSettings {
+  redeemAs: TokenToCollect;
+  minAmount: number;
+}
+
 export interface PoolConfig {
   name: string;
   address: Address;
@@ -87,6 +97,7 @@ export interface PoolConfig {
   take?: TakeSettings;
   dexSettings?: DexConfig; // Only set this value if you want winnings sent to dex and traded for L2 token.
   collectBond?: boolean;
+  collectLpReward?: CollectLpRewardSettings;
 }
 
 export interface KeeperConfig {
