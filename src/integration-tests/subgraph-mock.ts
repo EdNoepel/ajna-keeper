@@ -6,6 +6,7 @@ import subgraphModule, {
 import { getProvider } from './test-utils';
 import { weiToDecimaled } from '../utils';
 import { MAINNET_CONFIG } from './test-config';
+import { logger } from '../logging';
 
 export function overrideGetLoans(
   fn: typeof subgraphModule.getLoans
@@ -94,7 +95,7 @@ export function makeGetLiquidationsFromSdk(pool: FungiblePool) {
           });
         }
       } catch (e) {
-        console.debug(
+        logger.debug(
           `Failed to find auction for borrower: ${borrower}, pool: ${pool.name}`
         );
       }

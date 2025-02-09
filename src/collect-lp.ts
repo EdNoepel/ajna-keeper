@@ -16,6 +16,7 @@ import {
 } from '@ajna-finance/sdk/dist/types/contracts/ERC20Pool';
 import { BigNumber } from 'ethers';
 import { decimaledToWei, RequireFields, weiToDecimaled } from './utils';
+import { logger } from './logging';
 
 /**
  * Collects lp rewarded from BucketTakes without collecting the user's deposits or loans.
@@ -104,7 +105,7 @@ export class LpCollector {
           quoteToWithdraw
         );
         await withdrawQuoteTx.verifyAndSubmit();
-        console.log(
+        logger.info(
           `Collected LP Reward as Quote. pool: ${this.pool.name}, token: ${this.pool.quoteSymbol}, amount: ${weiToDecimaled(quoteToWithdraw)}`
         );
         return wdiv(quoteToWithdraw, exchangeRate);
@@ -118,7 +119,7 @@ export class LpCollector {
           collateralToWithdraw
         );
         await withdrawCollateralTx.verifyAndSubmit();
-        console.log(
+        logger.info(
           `Collected LP Reward as Collateral. pool: ${this.pool.name}, token: ${this.pool.collateralSymbol}, amount: ${weiToDecimaled(collateralToWithdraw)}`
         );
         const price = indexToPrice(bucketIndex);

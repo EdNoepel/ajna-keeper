@@ -10,6 +10,7 @@ import { handleKicks } from './kick';
 import { handleArbTakes } from './take';
 import { collectBondFromPool } from './collect-bond';
 import { LpCollector } from './collect-lp';
+import { logger } from './logging';
 
 type PoolMap = Map<string, FungiblePool>;
 
@@ -20,7 +21,7 @@ export async function startKeeperFromConfig(config: KeeperConfig) {
   );
   configureAjna(config.ajna);
   const ajna = new AjnaSDK(provider);
-  console.log('...and pools:');
+  logger.info('...and pools:');
   const poolMap = await getPoolsFromConfig(ajna, config);
 
   kickPoolsLoop({ poolMap, config, signer });
@@ -36,7 +37,7 @@ async function getPoolsFromConfig(
   const pools: PoolMap = new Map();
   for (const pool of config.pools) {
     const name: string = pool.name ?? '(unnamed)';
-    console.log('loading pool', name.padStart(18), 'at', pool.address);
+    logger.info('loading pool', name.padStart(18), 'at', pool.address);
     const fungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
       pool.address
     );

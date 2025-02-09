@@ -15,6 +15,7 @@ import {
 } from './erc20';
 import { BigNumber } from 'ethers';
 import { getPrice } from './price';
+import { logger } from './logging';
 
 interface HandleKickParams {
   pool: FungiblePool;
@@ -91,7 +92,7 @@ export async function* getLoansToKick({
 
     // If TP is lower than lup, the bond can not be kicked.
     if (thresholdPrice.lt(lup)) {
-      console.debug(
+      logger.debug(
         `Not kicking loan since TP is lower LUP. borrower: ${borrower}, TP: ${weiToDecimaled(thresholdPrice)}, LUP: ${weiToDecimaled(lup)}`
       );
       continue;
@@ -99,7 +100,7 @@ export async function* getLoansToKick({
 
     // if loan debt is lower than configured fixed value (denominated in quote token), skip it
     if (weiToDecimaled(debt) < poolConfig.kick.minDebt) {
-      console.debug(
+      logger.debug(
         `Not kicking loan since debt is too low. borrower: ${borrower}, debt: ${debt}`
       );
       continue;
@@ -107,7 +108,7 @@ export async function* getLoansToKick({
 
     // Only kick loans with a neutralPrice above hpb to ensure they are profitalbe.
     if (neutralPrice.lt(hpb)) {
-      console.debug(
+      logger.debug(
         `Not kicking loan since (NP < HPB). pool: ${pool.name}, borrower: ${borrower}, NP: ${neutralPrice}, hpb: ${hpb}`
       );
       continue;
@@ -123,7 +124,7 @@ export async function* getLoansToKick({
       weiToDecimaled(neutralPrice) * poolConfig.kick.priceFactor <
       limitPrice
     ) {
-      console.debug(
+      logger.debug(
         `Not kicking loan since (NP * Factor < Price). pool: ${pool.name}, borrower: ${borrower}, NP: ${neutralPrice}, Price: ${limitPrice}`
       );
       continue;
@@ -190,7 +191,7 @@ export async function kick({ pool, signer, config, loanToKick }: KickParams) {
   const { borrower, liquidationBond, limitPrice } = loanToKick;
 
   if (dryRun) {
-    console.debug(
+    logger.debug(
       `DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}`
     );
     return;
@@ -204,24 +205,27 @@ export async function kick({ pool, signer, config, loanToKick }: KickParams) {
     });
 
     if (!bondApproved) {
-      console.log(
+      logger.info(
         `Skipping kick of loan due to insufficient balance. pool: ${pool.name}, borrower: ${loanToKick.borrower}, bond: ${weiToDecimaled(liquidationBond)}`
       );
       return;
     }
 
-    console.log(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}`);
+    logger.info(
+      'info',
+      `Kicking loan - pool: ${pool.name}, borrower: ${borrower}`
+    );
     const limitIndex =
       limitPrice > 0
         ? pool.getBucketByPrice(decimaledToWei(limitPrice)).index
         : undefined;
     const kickTx = await pool.kick(signer, borrower, limitIndex);
     await kickTx.verifyAndSubmit();
-    console.log(
+    logger.info(
       `Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`
     );
   } catch (error) {
-    console.error(
+    logger.error(
       `Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}. Error: `,
       error
     );

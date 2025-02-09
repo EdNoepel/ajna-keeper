@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { Config, Address } from '@ajna-finance/sdk';
 import { FeeAmount } from '@uniswap/v3-sdk';
+import { logger } from './logging';
 
 // these are in seconds, helps manage API costs and rate limits
 const DELAY_BETWEEN_LOANS = 1.5;
@@ -127,7 +128,7 @@ export async function readConfigFile(filePath: string): Promise<KeeperConfig> {
       return parsedFile;
     }
   } catch (error) {
-    console.error('Error reading config file:', error);
+    logger.error('Error reading config file:', error);
     process.exit(1);
   }
 }
