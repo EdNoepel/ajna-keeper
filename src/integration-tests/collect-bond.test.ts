@@ -75,7 +75,7 @@ describe('collectBondFromPool', () => {
     const signer = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
     );
-    await collectBondFromPool({ signer, pool });
+    await collectBondFromPool({ signer, pool, config: {} });
     const amtWithdraw = await getAmountWithdrawn(pool, signer);
     expect(amtWithdraw).equals(0);
   });
@@ -99,7 +99,7 @@ describe('collectBondFromPool', () => {
       },
     });
 
-    await collectBondFromPool({ signer, pool });
+    await collectBondFromPool({ signer, pool, config: {} });
     const amtWithdraw = await getAmountWithdrawn(pool, signer);
     expect(amtWithdraw).equals(0);
   });
@@ -140,7 +140,7 @@ describe('collectBondFromPool', () => {
     const settleTx = await liquidation.settle(signer);
     await settleTx.verifyAndSubmit();
 
-    await collectBondFromPool({ signer, pool });
+    await collectBondFromPool({ signer, pool, config: {} });
     const amtWithdrawn = await getAmountWithdrawn(pool, signer);
     expect(amtWithdrawn).greaterThan(0);
   });

@@ -167,7 +167,7 @@ async function approveBalanceForLoanToKick({
     pool.quoteAddress,
     pool.poolAddress
   );
-  if (allowance < liquidationBond) {
+  if (allowance.lt(liquidationBond)) {
     const amountToApprove =
       estimatedRemainingBond < balanceWad
         ? estimatedRemainingBond
@@ -175,8 +175,23 @@ async function approveBalanceForLoanToKick({
     const margin = decimaledToWei(
       weiToDecimaled(amountToApprove) * LIQUIDATION_BOND_MARGIN
     );
-    const tx = await pool.quoteApprove(signer, amountToApprove.add(margin));
-    await tx.verifyAndSubmit();
+    const amountWithMargin = amountToApprove.add(margin);
+    try {
+      logger.debug(
+        `Approving quote. pool: ${pool.name}, amount: ${amountWithMargin}`
+      );
+      const tx = await pool.quoteApprove(signer, amountWithMargin);
+      await tx.verifyAndSubmit();
+      logger.debug(
+        `Approved quote. pool: ${pool.name}, amount: ${amountWithMargin}`
+      );
+    } catch (error) {
+      logger.error(
+        `Failed to approve quote. pool: ${pool.name}, amount: ${amountWithMargin}`,
+        error
+      );
+      return false;
+    }
   }
   return true;
 }
@@ -245,7 +260,13 @@ async function clearAllowances({
     pool.poolAddress
   );
   if (allowance > BigNumber.from('0')) {
-    const tx = await pool.quoteApprove(signer, BigNumber.from('0'));
-    await tx.verifyAndSubmit();
+    try {
+      logger.debug(`Clearing allowance. pool: ${pool.name}`);
+      const tx = await pool.quoteApprove(signer, BigNumber.from('0'));
+      await tx.verifyAndSubmit();
+      logger.debug(`Cleared allowance. pool: ${pool.name}`);
+    } catch (error) {
+      logger.error(`Failed to clear allowance. pool: ${pool.name}`, error);
+    }
   }
 }

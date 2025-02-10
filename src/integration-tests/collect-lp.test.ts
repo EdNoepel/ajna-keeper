@@ -77,17 +77,22 @@ describe('LpCollector subscription', () => {
     await resetHardhat();
   });
 
-  it('Tracks reward after BucketTake', async () => {
+  it('Tracks taker reward after BucketTake', async () => {
     const pool = await setup();
     const signer = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
     );
-    const lpCollector = new LpCollector(pool, signer, {
-      collectLpReward: {
-        redeemAs: TokenToCollect.QUOTE,
-        minAmount: 0,
+    const lpCollector = new LpCollector(
+      pool,
+      signer,
+      {
+        collectLpReward: {
+          redeemAs: TokenToCollect.QUOTE,
+          minAmount: 0,
+        },
       },
-    });
+      {}
+    );
     await lpCollector.startSubscription();
     await handleArbTakes({
       pool,
@@ -111,12 +116,17 @@ describe('LpCollector subscription', () => {
     const pool = await setup();
     const wallet = Wallet.fromMnemonic(USER1_MNEMONIC);
     const noActionSigner = wallet.connect(getProvider());
-    const lpCollector = new LpCollector(pool, noActionSigner, {
-      collectLpReward: {
-        redeemAs: TokenToCollect.QUOTE,
-        minAmount: 0,
+    const lpCollector = new LpCollector(
+      pool,
+      noActionSigner,
+      {
+        collectLpReward: {
+          redeemAs: TokenToCollect.QUOTE,
+          minAmount: 0,
+        },
       },
-    });
+      {}
+    );
     await lpCollector.startSubscription();
     const takerSigner = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
@@ -137,18 +147,24 @@ describe('LpCollector subscription', () => {
     await lpCollector.stopSubscription();
   });
 
-  it('Tracks rewards for kicker', async () => {
+  it.only('Tracks rewards for kicker', async () => {
     const pool = await setup();
     const kickerSigner = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress
     );
-    const lpCollector = new LpCollector(pool, kickerSigner, {
-      collectLpReward: {
-        redeemAs: TokenToCollect.QUOTE,
-        minAmount: 0,
+    const lpCollector = new LpCollector(
+      pool,
+      kickerSigner,
+      {
+        collectLpReward: {
+          redeemAs: TokenToCollect.QUOTE,
+          minAmount: 0,
+        },
       },
-    });
-    lpCollector.startSubscription();
+      {}
+    );
+    await lpCollector.startSubscription();
+    await delay(5);
     const takerSigner = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
     );
@@ -164,6 +180,7 @@ describe('LpCollector subscription', () => {
     });
     await waitForConditionToBeTrue(async () => {
       const entries = Array.from(lpCollector.lpMap.entries());
+      console.log(entries);
       const rewardLp: BigNumber | undefined = entries?.[0]?.[1];
       return !!rewardLp && rewardLp.gt(BigNumber.from('0'));
     });
@@ -181,12 +198,17 @@ describe('LpCollector collections', () => {
     const signer = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
     );
-    const lpCollector = new LpCollector(pool, signer, {
-      collectLpReward: {
-        redeemAs: TokenToCollect.QUOTE,
-        minAmount: 0,
+    const lpCollector = new LpCollector(
+      pool,
+      signer,
+      {
+        collectLpReward: {
+          redeemAs: TokenToCollect.QUOTE,
+          minAmount: 0,
+        },
       },
-    });
+      {}
+    );
     await lpCollector.startSubscription();
     await handleArbTakes({
       pool,
