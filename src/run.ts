@@ -105,7 +105,7 @@ async function collectBondLoop({ poolMap, config, signer }: KeepPoolParams) {
   while (true) {
     for (const poolConfig of poolsWithCollectBondSettings) {
       const pool = poolMap.get(poolConfig.address)!;
-      await collectBondFromPool({ pool, signer });
+      await collectBondFromPool({ pool, signer, config });
     }
     await delay(config.delayBetweenRuns);
   }
@@ -121,7 +121,7 @@ async function collectLpRewardsLoop({
 
   for (const poolConfig of poolsWithCollectLpSettings) {
     const pool = poolMap.get(poolConfig.address)!;
-    const collector = new LpCollector(pool, signer, poolConfig);
+    const collector = new LpCollector(pool, signer, poolConfig, config);
     collector.startSubscription();
   }
 

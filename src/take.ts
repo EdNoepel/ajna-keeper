@@ -93,15 +93,21 @@ export async function arbTakeLiquidation({
       `DryRun - would ArbTake - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
     );
   } else {
-    // TODO: should we loop through this step until collateral remaining is zero?
-    logger.info(
-      `Sending ArbTake Tx - poolAddress: ${pool.poolAddress}, borrower: ${borrower}, hpbIndex: ${hpbIndex}`
-    );
-    const liquidationSdk = pool.getLiquidation(borrower);
-    const arbTakeTx = await liquidationSdk.arbTake(signer, hpbIndex);
-    await arbTakeTx.verifyAndSubmit();
-    logger.info(
-      `ArbTake successful - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
-    );
+    try {
+      logger.info(
+        `Sending ArbTake Tx - poolAddress: ${pool.poolAddress}, borrower: ${borrower}, hpbIndex: ${hpbIndex}`
+      );
+      const liquidationSdk = pool.getLiquidation(borrower);
+      const arbTakeTx = await liquidationSdk.arbTake(signer, hpbIndex);
+      await arbTakeTx.verifyAndSubmit();
+      logger.info(
+        `ArbTake successful - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
+      );
+    } catch (error) {
+      logger.error(
+        `Failed to ArbTake. pool: ${pool.name}, borrower: ${borrower}`,
+        error
+      );
+    }
   }
 }

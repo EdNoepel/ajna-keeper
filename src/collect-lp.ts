@@ -32,7 +32,8 @@ export class LpCollector {
   constructor(
     private pool: FungiblePool,
     private signer: Signer,
-    private poolConfig: Required<Pick<PoolConfig, 'collectLpReward'>>
+    private poolConfig: Required<Pick<PoolConfig, 'collectLpReward'>>,
+    private config: Pick<KeeperConfig, 'dryRun'>
   ) {
     const poolContract = ERC20Pool__factory.connect(
       this.pool.poolAddress,
@@ -100,30 +101,62 @@ export class LpCollector {
       const rewardQuote = await bucket.lpToQuoteTokens(rewardLp);
       const quoteToWithdraw = min(depositWithdrawable, rewardQuote);
       if (quoteToWithdraw.gt(decimaledToWei(minAmount))) {
-        const withdrawQuoteTx = await bucket.removeQuoteToken(
-          this.signer,
-          quoteToWithdraw
-        );
-        await withdrawQuoteTx.verifyAndSubmit();
-        logger.info(
-          `Collected LP Reward as Quote. pool: ${this.pool.name}, token: ${this.pool.quoteSymbol}, amount: ${weiToDecimaled(quoteToWithdraw)}`
-        );
-        return wdiv(quoteToWithdraw, exchangeRate);
+        if (this.config.dryRun) {
+          logger.info(
+            `DryRun - would collect LP reward as quote. pool: ${this.pool.name}`
+          );
+        } else {
+          try {
+            logger.debug(
+              `Collecting LP reward as quote. pool: ${this.pool.name}`
+            );
+            const withdrawQuoteTx = await bucket.removeQuoteToken(
+              this.signer,
+              quoteToWithdraw
+            );
+            await withdrawQuoteTx.verifyAndSubmit();
+            logger.info(
+              `Collected LP reward as quote. pool: ${this.pool.name}, amount: ${weiToDecimaled(quoteToWithdraw)}`
+            );
+            return wdiv(quoteToWithdraw, exchangeRate);
+          } catch (error) {
+            logger.error(
+              `Failed to collect LP reward as quote. pool: ${this.pool.name}`,
+              error
+            );
+          }
+        }
       }
     } else {
       const rewardCollateral = await bucket.lpToCollateral(rewardLp);
       const collateralToWithdraw = min(rewardCollateral, collateral);
       if (collateralToWithdraw.gt(decimaledToWei(minAmount))) {
-        const withdrawCollateralTx = await bucket.removeQuoteToken(
-          this.signer,
-          collateralToWithdraw
-        );
-        await withdrawCollateralTx.verifyAndSubmit();
-        logger.info(
-          `Collected LP Reward as Collateral. pool: ${this.pool.name}, token: ${this.pool.collateralSymbol}, amount: ${weiToDecimaled(collateralToWithdraw)}`
-        );
-        const price = indexToPrice(bucketIndex);
-        return wdiv(wdiv(collateralToWithdraw, price), exchangeRate);
+        if (this.config.dryRun) {
+          logger.info(
+            `DryRun - Would collect LP reward as collateral. pool: ${this.pool.name}`
+          );
+        } else {
+          try {
+            logger.debug(
+              `Collecting LP reward as collateral. pool ${this.pool.name}`
+            );
+            const withdrawCollateralTx = await bucket.removeQuoteToken(
+              this.signer,
+              collateralToWithdraw
+            );
+            await withdrawCollateralTx.verifyAndSubmit();
+            logger.info(
+              `Collected LP reward as collateral. pool: ${this.pool.name}, token: ${this.pool.collateralSymbol}, amount: ${weiToDecimaled(collateralToWithdraw)}`
+            );
+            const price = indexToPrice(bucketIndex);
+            return wdiv(wdiv(collateralToWithdraw, price), exchangeRate);
+          } catch (error) {
+            logger.error(
+              `Failed to collect LP reward as collateral. pool: ${this.pool.name}`,
+              error
+            );
+          }
+        }
       }
     }
     return BigNumber.from('0');
