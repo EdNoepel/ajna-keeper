@@ -6,7 +6,7 @@ import {
 
 const config: KeeperConfig = {
   dryRun: true,
-  ethRpcUrl: 'https://base-mainnet.g.alchemy.com/v2/?????',
+  ethRpcUrl: 'https://base-mainnet.g.alchemy.com/v2/<api-key>',
   subgraphUrl:
     'https://api.studio.thegraph.com/query/49479/ajna-base/version/latest',
   keeperKeystore: '/home/anon/keystore-files/keeper-keystore.json',
@@ -25,7 +25,7 @@ const config: KeeperConfig = {
     lenderHelper: '',
   },
   pricing: {
-    coinGeckoApiKey: 'CG-????????????',
+    coinGeckoApiKey: '<api-key>',
   },
   pools: [
     {
