@@ -83,6 +83,7 @@ export const MAINNET_CONFIG = {
     quoteWhaleAddress: '0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E',
     collateralWhaleAddress: '0x127452F3f9cDc0389b0Bf59ce6131aA3Bd763598',
     collateralWhaleAddress2: '0xD48573cDA0fed7144f2455c5270FFa16Be389d04',
+    collateralWhaleAddress3: '0x554adc35ccD8090566BfcA842537fd39b82489C1',
     poolConfig: {
       name: 'SOL/WETH',
       address: '0xe402b4af519c8c3a6e01949d4edb945d0d470a95',

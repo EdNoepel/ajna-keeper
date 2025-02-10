@@ -80,7 +80,7 @@ describe('LpCollector subscription', () => {
   it('Tracks taker reward after BucketTake', async () => {
     const pool = await setup();
     const signer = await impersonateSigner(
-      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
+      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress3
     );
     const lpCollector = new LpCollector(
       pool,
@@ -150,7 +150,7 @@ describe('LpCollector subscription', () => {
   it('Tracks rewards for kicker', async () => {
     const pool = await setup();
     const kickerSigner = await impersonateSigner(
-      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress
+      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
     );
     const lpCollector = new LpCollector(
       pool,
@@ -166,7 +166,7 @@ describe('LpCollector subscription', () => {
     await lpCollector.startSubscription();
     await delay(5);
     const takerSigner = await impersonateSigner(
-      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
+      MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress3
     );
     await handleArbTakes({
       pool,
@@ -180,7 +180,6 @@ describe('LpCollector subscription', () => {
     });
     await waitForConditionToBeTrue(async () => {
       const entries = Array.from(lpCollector.lpMap.entries());
-      console.log(entries);
       const rewardLp: BigNumber | undefined = entries?.[0]?.[1];
       return !!rewardLp && rewardLp.gt(BigNumber.from('0'));
     });
