@@ -94,7 +94,7 @@ export async function arbTakeLiquidation({
     );
   } else {
     try {
-      logger.info(
+      logger.debug(
         `Sending ArbTake Tx - poolAddress: ${pool.poolAddress}, borrower: ${borrower}, hpbIndex: ${hpbIndex}`
       );
       const liquidationSdk = pool.getLiquidation(borrower);

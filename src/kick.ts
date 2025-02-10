@@ -226,10 +226,7 @@ export async function kick({ pool, signer, config, loanToKick }: KickParams) {
       return;
     }
 
-    logger.info(
-      'info',
-      `Kicking loan - pool: ${pool.name}, borrower: ${borrower}`
-    );
+    logger.debug(`Kicking loan - pool: ${pool.name}, borrower: ${borrower}`);
     const limitIndex =
       limitPrice > 0
         ? pool.getBucketByPrice(decimaledToWei(limitPrice)).index
