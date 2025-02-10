@@ -226,7 +226,7 @@ export async function kick({ pool, signer, config, loanToKick }: KickParams) {
     );
   } catch (error) {
     logger.error(
-      `Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}. Error: `,
+      `Failed to kick loan. pool: ${pool.name}, borrower: ${borrower}.`,
       error
     );
   }

@@ -6,6 +6,9 @@
 # Hardhat
 /cache
 
+# logging
+/logs
+
 # misc
 .DS_Store
 config*.json

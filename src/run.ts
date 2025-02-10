@@ -37,7 +37,7 @@ async function getPoolsFromConfig(
   const pools: PoolMap = new Map();
   for (const pool of config.pools) {
     const name: string = pool.name ?? '(unnamed)';
-    logger.info('loading pool', name.padStart(18), 'at', pool.address);
+    logger.info(`loading pool ${name.padStart(18)} at ${pool.address}`);
     const fungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(
       pool.address
     );
