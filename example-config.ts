@@ -2,6 +2,7 @@ import {
   KeeperConfig,
   PriceOriginPoolReference,
   PriceOriginSource,
+  TokenToCollect,
 } from './src/config';
 
 const config: KeeperConfig = {
@@ -39,6 +40,11 @@ const config: KeeperConfig = {
         minDebt: 0.07,
         priceFactor: 0.9,
       },
+      collectBond: true,
+      collectLpReward: {
+        redeemAs: TokenToCollect.QUOTE,
+        minAmount: 0.001,
+      },
     },
     {
       name: 'WETH / USDC',
@@ -51,6 +57,11 @@ const config: KeeperConfig = {
         minDebt: 50,
         priceFactor: 0.95,
       },
+      collectBond: true,
+      collectLpReward: {
+        redeemAs: TokenToCollect.COLLATERAL,
+        minAmount: 0.001,
+      },
     },
     {
       name: 'cbETH / WETH',
@@ -62,6 +73,11 @@ const config: KeeperConfig = {
       kick: {
         minDebt: 0.08,
         priceFactor: 0.95,
+      },
+      collectBond: true,
+      collectLpReward: {
+        redeemAs: TokenToCollect.QUOTE,
+        minAmount: 0.001,
       },
     },
   ],
