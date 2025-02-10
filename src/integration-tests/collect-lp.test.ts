@@ -147,7 +147,7 @@ describe('LpCollector subscription', () => {
     await lpCollector.stopSubscription();
   });
 
-  it.only('Tracks rewards for kicker', async () => {
+  it('Tracks rewards for kicker', async () => {
     const pool = await setup();
     const kickerSigner = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress
