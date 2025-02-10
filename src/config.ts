@@ -56,19 +56,17 @@ export type PriceOrigin = (
   | PriceOriginCoinGecko
   | PriceOriginPool
 ) & {
-  invert?: boolean; // TODO: Is invert used for all price sources?
+  invert?: boolean; // Uses the inverse of the price as reference.
 };
 
 export interface KickSettings {
   minDebt: number; // The minimum amount of debt in wad to kick a loan.
-  // TODO: Assert priceFactor is less than one.
-  priceFactor: number; // Once the loan price
+  priceFactor: number; // Will only kick when NP * priceFactor > price. (Should be less than one).
 }
 
 export interface TakeSettings {
   minCollateral: number;
   priceFactor: number; // Will only arbTake when auctionPrice < hpb * priceFactor.
-  withdrawRewardLiquidity: boolean;
 }
 
 export interface CollectSettings {
@@ -94,16 +92,16 @@ export interface PoolConfig {
   name: string;
   address: Address;
   price: PriceOrigin; // TODO: move price setting to kick settings.
-  kick?: KickSettings;
-  take?: TakeSettings;
+  kick?: KickSettings; // Will only kick if settings are provided.
+  take?: TakeSettings; // Will only take if settings are provided.
   dexSettings?: DexConfig; // Only set this value if you want winnings sent to dex and traded for L2 token.
-  collectBond?: boolean;
-  collectLpReward?: CollectLpRewardSettings;
+  collectBond?: boolean; // Will only collect bond if true.
+  collectLpReward?: CollectLpRewardSettings; // Will only collect reward if settings are provided.
 }
 
 export interface KeeperConfig {
   ethRpcUrl: string;
-  subgraphUrl: string; // TODO: fallback to SDK if this is not provided?
+  subgraphUrl: string;
   keeperKeystore: string;
   dryRun?: boolean;
   multicallAddress?: string;
@@ -145,7 +143,6 @@ export function assertIsValidConfig(
   config.delayBetweenActions =
     config.delayBetweenActions ?? DELAY_BETWEEN_LOANS;
   config.delayBetweenRuns = config.delayBetweenRuns ?? DELAY_MAIN_LOOP;
-  // TODO: validate the nested config
 }
 
 function expectProperty<T, K extends keyof T>(config: T, key: K): void {

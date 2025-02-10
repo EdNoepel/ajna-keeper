@@ -50,6 +50,7 @@ yarn --frozen-lockfile
 ### Configuration file
 
 While `*.json` config files are supported, it is recommended to use `*.ts` config files so that you get the benefits of type checking.
+See `example-config.ts` for reference.
 
 ### Price sources
 
