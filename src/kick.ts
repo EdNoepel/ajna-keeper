@@ -64,7 +64,12 @@ export async function* getLoansToKick({
   poolConfig,
 }: GetLoansToKickParams): AsyncGenerator<LoanToKick> {
   const { subgraphUrl } = config;
-  const { loans } = await subgraph.getLoans(subgraphUrl, pool.poolAddress);
+  const { lup } = await pool.getPrices();
+  const { loans } = await subgraph.getLoans(
+    subgraphUrl,
+    pool.poolAddress,
+    weiToDecimaled(lup)
+  );
   const loanMap = await pool.getLoans(loans.map(({ borrower }) => borrower));
   const borrowersSortedByBond = Array.from(loanMap.keys()).sort(
     (borrowerA, borrowerB) => {
