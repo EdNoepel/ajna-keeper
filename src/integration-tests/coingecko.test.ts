@@ -3,7 +3,7 @@ import 'dotenv';
 import { PriceOriginSource } from '../config';
 import { getPriceCoinGecko } from '../coingecko';
 
-describe.only('Coingecko API', () => {
+describe('Coingecko API', () => {
   before(() => {
     expect(
       !!process.env.COINGECKO_API_KEY,
