@@ -21,6 +21,8 @@ You'll need `node` and related tools (`npm`, `yarn`). This was developed with no
 
 Download node here: https://nodejs.org/en
 
+Install node dependencies.
+
 ```bash
 yarn --frozen-lockfile
 ```
