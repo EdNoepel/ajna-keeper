@@ -1,6 +1,6 @@
 import { FungiblePool, Signer } from '@ajna-finance/sdk';
 import { BigNumber } from 'ethers';
-import { KeeperConfig, PoolConfig } from './config';
+import { KeeperConfig, PoolConfig } from './config-types';
 import {
   getAllowanceOfErc20,
   getBalanceOfErc20,
