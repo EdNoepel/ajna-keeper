@@ -46,9 +46,7 @@ describe('getLoansToKick', () => {
         poolConfig: MAINNET_CONFIG.SOL_WETH_POOL.poolConfig,
         config: {
           subgraphUrl: '',
-          pricing: {
-            coinGeckoApiKey: '',
-          },
+          coinGeckoApiKey: '',
         },
       })
     );
@@ -82,9 +80,7 @@ describe('getLoansToKick', () => {
         poolConfig: MAINNET_CONFIG.SOL_WETH_POOL.poolConfig,
         config: {
           subgraphUrl: '',
-          pricing: {
-            coinGeckoApiKey: '',
-          },
+          coinGeckoApiKey: '',
         },
       })
     );
@@ -126,9 +122,7 @@ describe('kick', () => {
         poolConfig: MAINNET_CONFIG.SOL_WETH_POOL.poolConfig,
         config: {
           subgraphUrl: '',
-          pricing: {
-            coinGeckoApiKey: '',
-          },
+          coinGeckoApiKey: '',
         },
       })
     );
