@@ -21,6 +21,7 @@ async function addAccountFromKeystore(
 
   try {
     let wallet = Wallet.fromEncryptedJsonSync(jsonKeystore, pswd);
+    logger.info(`Loaded wallet with address: ${wallet.address}`);
     return wallet.connect(provider);
   } catch (error) {
     logger.error('Error decrypting keystore:', error);
