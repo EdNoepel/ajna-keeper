@@ -138,6 +138,7 @@ export interface KeeperConfig {
   multicallAddress?: string;
   /** The block at which the multicall contract was deployed. Use this only if you have used multicallAddress. */
   multicallBlock?: number;
+  /** Contract addresses passed to Ajna for this chain. See here for addresses https://faqs.ajna.finance/info/deployment-addresses-and-bridges */
   ajna: AjnaConfigParams;
   /** Your API key for Coingecko.com */
   coinGeckoApiKey: string;
