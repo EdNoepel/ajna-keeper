@@ -19,7 +19,13 @@ You must setup one bot per-chain, per-signer.
 
 You'll need `node` and related tools (`npm`, `yarn`). This was developed with node v22 but should work with later versions.
 
-Download node here: https://nodejs.org/en
+Download node here: https://nodejs.org/en Downloading `node` also installs `npm`.
+
+Install `yarn`
+
+```bash
+npm install --global yarn
+```
 
 Install node dependencies.
 
@@ -51,6 +57,7 @@ In a different folder clone the ajna-finance repo. It is recommended that you ch
 
 ```bash
 git clone https://github.com/ajna-finance/subgraph.git
+cd subgraph
 git checkout develop
 ```
 
@@ -123,6 +130,17 @@ See `example-config.ts` for reference.
 If the price source only has quote token priced in collateral, you may add `"invert": true` to `price` config to invert the configured price.
 
 ## Testing
+
+### Add Alchemy API key and Coingecko API to .env
+
+Add your alchemy API key and coingecko API key to .env
+
+```.env
+ALCHEMY_API_KEY="<api_key>"
+COINGECKO_API_KEY="<api_key>"
+```
+
+Note: You will need to enable mainnet in Alchemy since hardhat queries from mainnet.
 
 ### Running tests
 
