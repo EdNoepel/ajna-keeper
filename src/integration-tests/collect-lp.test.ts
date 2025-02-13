@@ -1,28 +1,41 @@
-import './subgraph-mock';
 import { AjnaSDK, FungiblePool } from '@ajna-finance/sdk';
-import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
+import { Token, WETH9 } from '@uniswap/sdk-core';
+import { expect } from 'chai';
+import { BigNumber, Wallet } from 'ethers';
+import { LpCollector } from '../collect-lp';
 import { configureAjna, TokenToCollect } from '../config-types';
-import {
-  getProvider,
-  resetHardhat,
-  increaseTime,
-  impersonateSigner,
-} from './test-utils';
+import { getBalanceOfErc20 } from '../erc20';
+import { handleKicks } from '../kick';
+import { handleArbTakes } from '../take';
+import { delay } from '../utils';
+import { depositQuoteToken, drawDebt } from './loan-helpers';
+import './subgraph-mock';
 import {
   makeGetLiquidationsFromSdk,
   makeGetLoansFromSdk,
   overrideGetLiquidations,
   overrideGetLoans,
 } from './subgraph-mock';
-import { expect } from 'chai';
-import { delay } from '../utils';
-import { depositQuoteToken, drawDebt } from './loan-helpers';
-import { handleKicks } from '../kick';
-import { handleArbTakes } from '../take';
-import { LpCollector } from '../collect-lp';
-import { BigNumber, Wallet } from 'ethers';
-import { waitForConditionToBeTrue } from './test-utils';
-import { getBalanceOfErc20 } from '../erc20';
+import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
+import {
+  getProvider,
+  impersonateSigner,
+  increaseTime,
+  resetHardhat,
+  waitForConditionToBeTrue,
+} from './test-utils';
+
+const HARDHAT_CHAIN_ID = 31337;
+
+const WETH_HARDHAT_ADDRESS = '0xfD3e0cEe740271f070607aEddd0Bf4Cf99C92204';
+
+WETH9[HARDHAT_CHAIN_ID] = new Token(
+  HARDHAT_CHAIN_ID,
+  WETH_HARDHAT_ADDRESS,
+  18,
+  'WETH',
+  'Wrapped Ether'
+);
 
 const setup = async () => {
   configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
@@ -190,6 +203,7 @@ describe('LpCollector collections', () => {
     const signer = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
     );
+
     const lpCollector = new LpCollector(
       pool,
       signer,
