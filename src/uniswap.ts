@@ -13,7 +13,7 @@ import {
   Trade,
   Pool as UniswapV3Pool,
 } from '@uniswap/v3-sdk';
-import { BigNumber, Contract, providers, Signer } from 'ethers';
+import { BigNumber, Contract, ethers, providers, Signer } from 'ethers';
 import { getDecimalsErc20 } from './erc20';
 import { logger } from './logging';
 
@@ -37,10 +37,18 @@ export async function getPoolInfo(
   const contract =
     poolContract ?? new Contract(poolAddress, IUniswapV3PoolABI.abi, provider);
 
+  logger.info('Fetching liquidity and slot0...');
   const [liquidity, slot0] = await Promise.all([
     contract.liquidity(),
     contract.slot0(),
   ]);
+
+  console.log(
+    'Liquidity:',
+    liquidity.toString(),
+    'Slot0:',
+    slot0[0].toString()
+  );
 
   return {
     liquidity,
@@ -53,18 +61,21 @@ export async function exchangeForNative(
   signer: Signer,
   erc20Address: string,
   fee: FeeAmount,
-  amount: number,
+  amount: string,
   poolContract: Contract
 ) {
   if (!signer || !erc20Address || !fee || !amount || !poolContract) {
     throw new Error('Invalid parameters provided to exchangeForNative');
   }
   const provider = signer.provider as providers.JsonRpcProvider;
+
   if (!provider) {
     throw new Error('Signer does not have an associated provider');
   }
 
-  const { chainId } = await provider.getNetwork();
+  const network = await provider.getNetwork();
+  const { chainId } = network;
+
   if (!chainId) {
     throw new Error('Could not determine chain ID');
   }
@@ -72,6 +83,7 @@ export async function exchangeForNative(
   const decimals = await getDecimalsErc20(signer, erc20Address);
 
   const erc20Token = new Token(chainId, erc20Address, decimals);
+
   const wethAddress = WETH9[chainId]?.address;
   if (!wethAddress) {
     throw new Error('WETH address not found for chain ID');
@@ -146,4 +158,68 @@ export async function exchangeForNative(
   }
 
   logger.info(`Swap successful: ${tx.hash}`);
+}
+
+export async function swapWinnings(
+  tokenCollected: string | null,
+  amountCollected: BigNumber,
+  feeAmpunt: FeeAmount,
+  signer: Signer
+) {
+  const network = await signer.provider!.getNetwork();
+  let customWETH9;
+  if (WETH9[network.chainId!] === undefined) {
+    try {
+      customWETH9 = {
+        ...WETH9,
+        [network.chainId]: new Token(
+          network.chainId,
+          '0xfD3e0cEe740271f070607aEddd0Bf4Cf99C92204',
+          18,
+          'WETH',
+          'Wrapped Ether'
+        ),
+      };
+    } catch (error) {
+      logger.error(`Failed to get WETH9 address: ${error}`, error);
+    }
+  } else {
+    customWETH9 = WETH9;
+  }
+
+  if (
+    tokenCollected &&
+    customWETH9 &&
+    tokenCollected !== customWETH9[network.chainId]?.address
+  ) {
+    try {
+      const tokenCollectedToken = new Token(
+        network.chainId,
+        tokenCollected as string,
+        18,
+        'WETH',
+        'Wrapped Ether'
+      );
+
+      const poolContract = new Contract(
+        UniswapV3Pool.getAddress(
+          customWETH9[network.chainId],
+          tokenCollectedToken,
+          feeAmpunt
+        ),
+        IUniswapV3PoolABI.abi,
+        signer.provider!
+      );
+
+      await exchangeForNative(
+        signer,
+        tokenCollected,
+        feeAmpunt,
+        amountCollected.toString(),
+        poolContract
+      );
+    } catch (error) {
+      logger.error(`Failed to exchange collected tokens to native.`, error);
+    }
+  }
 }

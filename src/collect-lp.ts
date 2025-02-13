@@ -1,22 +1,26 @@
 import {
-  Signer,
-  FungiblePool,
-  ERC20Pool__factory,
-  indexToPrice,
-  wdiv,
-  min,
   ERC20,
+  ERC20Pool__factory,
+  FungiblePool,
+  indexToPrice,
+  min,
+  Signer,
+  wdiv,
 } from '@ajna-finance/sdk';
-import { KeeperConfig, PoolConfig, TokenToCollect } from './config-types';
 import { TypedListener } from '@ajna-finance/sdk/dist/types/contracts/common';
 import {
   BucketTakeLPAwardedEvent,
   BucketTakeLPAwardedEventFilter,
   ERC20Pool,
 } from '@ajna-finance/sdk/dist/types/contracts/ERC20Pool';
-import { BigNumber } from 'ethers';
-import { decimaledToWei, RequireFields, weiToDecimaled } from './utils';
+import { Token, WETH9 } from '@uniswap/sdk-core';
+import IUniswapV3PoolABI from '@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json';
+import { FeeAmount, Pool as UniswapV3Pool } from '@uniswap/v3-sdk';
+import { BigNumber, Contract } from 'ethers';
+import { KeeperConfig, PoolConfig, TokenToCollect } from './config-types';
 import { logger } from './logging';
+import { exchangeForNative, swapWinnings } from './uniswap';
+import { decimaledToWei, weiToDecimaled } from './utils';
 
 /**
  * Collects lp rewarded from BucketTakes without collecting the user's deposits or loans.
@@ -33,7 +37,7 @@ export class LpCollector {
     private pool: FungiblePool,
     private signer: Signer,
     private poolConfig: Required<Pick<PoolConfig, 'collectLpReward'>>,
-    private config: Pick<KeeperConfig, 'dryRun'>
+    private config: Pick<KeeperConfig, 'dryRun' | 'pools'>
   ) {
     const poolContract = ERC20Pool__factory.connect(
       this.pool.poolAddress,
@@ -89,13 +93,21 @@ export class LpCollector {
     bucketIndex: number,
     rewardLp: BigNumber
   ): Promise<BigNumber> {
-    const { redeemAs, minAmount } = this.poolConfig.collectLpReward;
+    const {
+      redeemAs,
+      minAmount,
+      shouldExchangeLPRewards,
+      exchangeRewardsFeeAmount,
+    } = this.poolConfig.collectLpReward;
     const signerAddress = await this.signer.getAddress();
     const bucket = await this.pool.getBucketByIndex(bucketIndex);
     const { exchangeRate, collateral } = await bucket.getStatus();
     const { lpBalance, depositWithdrawable } =
       await bucket.getPosition(signerAddress);
     if (lpBalance.lt(rewardLp)) rewardLp = lpBalance;
+
+    let tokenCollected: string | null = null;
+    let amountCollected: BigNumber = BigNumber.from('0');
 
     if (redeemAs == TokenToCollect.QUOTE) {
       const rewardQuote = await bucket.lpToQuoteTokens(rewardLp);
@@ -118,6 +130,16 @@ export class LpCollector {
             logger.info(
               `Collected LP reward as quote. pool: ${this.pool.name}, amount: ${weiToDecimaled(quoteToWithdraw)}`
             );
+            if (!!shouldExchangeLPRewards && exchangeRewardsFeeAmount) {
+              tokenCollected = this.pool.quoteAddress;
+              amountCollected = quoteToWithdraw;
+              await swapWinnings(
+                tokenCollected,
+                amountCollected,
+                exchangeRewardsFeeAmount,
+                this.signer
+              );
+            }
             return wdiv(quoteToWithdraw, exchangeRate);
           } catch (error) {
             logger.error(
@@ -148,6 +170,17 @@ export class LpCollector {
             logger.info(
               `Collected LP reward as collateral. pool: ${this.pool.name}, token: ${this.pool.collateralSymbol}, amount: ${weiToDecimaled(collateralToWithdraw)}`
             );
+
+            if (!!shouldExchangeLPRewards && exchangeRewardsFeeAmount) {
+              tokenCollected = this.pool.collateralAddress;
+              amountCollected = collateralToWithdraw;
+              await swapWinnings(
+                tokenCollected,
+                amountCollected,
+                exchangeRewardsFeeAmount,
+                this.signer
+              );
+            }
             const price = indexToPrice(bucketIndex);
             return wdiv(wdiv(collateralToWithdraw, price), exchangeRate);
           } catch (error) {
