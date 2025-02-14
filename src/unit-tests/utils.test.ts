@@ -7,6 +7,7 @@ import {
   decimaledToWei,
   weiToDecimaled,
   tokenChangeDecimals,
+  waitForConditionToBeTrue,
 } from '../utils';
 
 const mockAddress = '0x123456abcabc123456abcabcd123456abcdabcd1';
@@ -161,4 +162,48 @@ describe('tokenChangeDecimals', () => {
   testConvertDecimals('1000000', 6, 18, '1000000000000000000');
   testConvertDecimals('1000000000000000000', 18, 6, '1000000');
   testConvertDecimals('1000000000000000000', 18, 18, '1000000000000000000');
+});
+
+describe('waitForConditionToBeTrue', () => {
+  it('Waits for condition to be true', async function () {
+    this.timeout(10000);
+    const waitTimeSeconds = 3;
+    const startTime = Date.now();
+    await waitForConditionToBeTrue(async () => {
+      const elapsedTimeSeconds = (Date.now() - startTime) / 1000;
+      return elapsedTimeSeconds > waitTimeSeconds;
+    });
+    const elapsedTimeMs = Date.now() - startTime;
+    expect(elapsedTimeMs).gte(waitTimeSeconds * 1000);
+  });
+
+  it('respects pollingInterval', async function () {
+    this.timeout(10000);
+    const waitTimeSeconds = 3;
+    const startTime = Date.now();
+    let fnCalledCount = 0;
+    await waitForConditionToBeTrue(async () => {
+      fnCalledCount++;
+      const elapsedTimeSeconds = (Date.now() - startTime) / 1000;
+      return elapsedTimeSeconds > waitTimeSeconds;
+    }, 0.1);
+    expect(fnCalledCount).lte(31).and.gte(29);
+  });
+
+  it('times out', async function () {
+    this.timeout(10000);
+    const waitTimeSeconds = 3;
+    const startTime = Date.now();
+    const waitForFn = waitForConditionToBeTrue(
+      async () => {
+        const elapsedTimeSeconds = (Date.now() - startTime) / 1000;
+        return elapsedTimeSeconds > waitTimeSeconds;
+      },
+      0.1,
+      1
+    );
+    expect(waitForFn).to.be.rejectedWith(
+      'Timed out before condition became true.'
+    );
+  });
 });

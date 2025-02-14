@@ -47,12 +47,3 @@ export const increaseTime = async (seconds: number) => {
   await mine();
   return await latestBlockTimestamp();
 };
-
-export const waitForConditionToBeTrue = async (
-  fn: () => Promise<boolean>,
-  pollingTime: number = 0.2
-) => {
-  while (!(await fn())) {
-    await delay(pollingTime);
-  }
-};

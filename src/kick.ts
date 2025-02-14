@@ -16,6 +16,7 @@ import {
   tokenChangeDecimals,
   weiToDecimaled,
 } from './utils';
+import { txSemaphore } from './tx-semaphore';
 
 interface HandleKickParams {
   pool: FungiblePool;
@@ -178,8 +179,10 @@ async function approveBalanceForLoanToKick({
       logger.debug(
         `Approving quote. pool: ${pool.name}, amount: ${amountWithMargin}`
       );
-      const tx = await pool.quoteApprove(signer, amountWithMargin);
-      await tx.verifyAndSubmit();
+      await txSemaphore.waitForTx(async () => {
+        const tx = await pool.quoteApprove(signer, amountWithMargin);
+        await tx.verifyAndSubmit();
+      }, signer);
       logger.debug(
         `Approved quote. pool: ${pool.name}, amount: ${amountWithMargin}`
       );
@@ -204,7 +207,7 @@ export async function kick({ pool, signer, config, loanToKick }: KickParams) {
   const { borrower, liquidationBond, limitPrice } = loanToKick;
 
   if (dryRun) {
-    logger.debug(
+    logger.info(
       `DryRun - Would kick loan - pool: ${pool.name}, borrower: ${borrower}`
     );
     return;
@@ -229,8 +232,10 @@ export async function kick({ pool, signer, config, loanToKick }: KickParams) {
       limitPrice > 0
         ? pool.getBucketByPrice(decimaledToWei(limitPrice)).index
         : undefined;
-    const kickTx = await pool.kick(signer, borrower, limitIndex);
-    await kickTx.verifyAndSubmit();
+    await txSemaphore.waitForTx(async () => {
+      const kickTx = await pool.kick(signer, borrower, limitIndex);
+      await kickTx.verifyAndSubmit();
+    }, signer);
     logger.info(
       `Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`
     );
@@ -257,8 +262,10 @@ async function clearAllowances({
   if (allowance > BigNumber.from('0')) {
     try {
       logger.debug(`Clearing allowance. pool: ${pool.name}`);
-      const tx = await pool.quoteApprove(signer, BigNumber.from('0'));
-      await tx.verifyAndSubmit();
+      await txSemaphore.waitForTx(async () => {
+        const tx = await pool.quoteApprove(signer, BigNumber.from('0'));
+        await tx.verifyAndSubmit();
+      }, signer);
       logger.debug(`Cleared allowance. pool: ${pool.name}`);
     } catch (error) {
       logger.error(`Failed to clear allowance. pool: ${pool.name}`, error);
