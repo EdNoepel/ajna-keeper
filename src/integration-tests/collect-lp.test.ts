@@ -21,7 +21,7 @@ import { handleKicks } from '../kick';
 import { handleArbTakes } from '../take';
 import { LpCollector } from '../collect-lp';
 import { BigNumber, Wallet } from 'ethers';
-import { waitForConditionToBeTrue } from './test-utils';
+import { waitForConditionToBeTrue } from '../utils';
 import { getBalanceOfErc20 } from '../erc20';
 
 const setup = async () => {

@@ -3,6 +3,7 @@ import subgraph from './subgraph';
 import { delay, RequireFields, weiToDecimaled } from './utils';
 import { KeeperConfig, PoolConfig } from './config-types';
 import { logger } from './logging';
+import { txSemaphore } from './tx-semaphore';
 
 interface HandleArbParams {
   signer: Signer;
@@ -98,8 +99,10 @@ export async function arbTakeLiquidation({
         `Sending ArbTake Tx - poolAddress: ${pool.poolAddress}, borrower: ${borrower}, hpbIndex: ${hpbIndex}`
       );
       const liquidationSdk = pool.getLiquidation(borrower);
-      const arbTakeTx = await liquidationSdk.arbTake(signer, hpbIndex);
-      await arbTakeTx.verifyAndSubmit();
+      await txSemaphore.waitForTx(async () => {
+        const arbTakeTx = await liquidationSdk.arbTake(signer, hpbIndex);
+        await arbTakeTx.verifyAndSubmit();
+      }, signer);
       logger.info(
         `ArbTake successful - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
       );
