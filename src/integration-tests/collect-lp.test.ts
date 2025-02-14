@@ -55,9 +55,7 @@ const setup = async () => {
     config: {
       dryRun: false,
       subgraphUrl: '',
-      pricing: {
-        coinGeckoApiKey: '',
-      },
+      coinGeckoApiKey: '',
       delayBetweenActions: 0,
     },
   });

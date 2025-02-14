@@ -92,9 +92,7 @@ describe('collectBondFromPool', () => {
       config: {
         dryRun: false,
         subgraphUrl: '',
-        pricing: {
-          coinGeckoApiKey: '',
-        },
+        coinGeckoApiKey: '',
         delayBetweenActions: 0,
       },
     });
@@ -116,9 +114,7 @@ describe('collectBondFromPool', () => {
       config: {
         dryRun: false,
         subgraphUrl: '',
-        pricing: {
-          coinGeckoApiKey: '',
-        },
+        coinGeckoApiKey: '',
         delayBetweenActions: 0,
       },
     });
