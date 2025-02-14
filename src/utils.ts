@@ -134,15 +134,15 @@ export async function arrayFromAsync<T>(
  */
 export const waitForConditionToBeTrue = async (
   fn: () => Promise<boolean>,
-  pollingInterval: number = 0.2,
-  timeout: number = 40
+  pollingIntervalSeconds: number = 0.2,
+  timeoutSeconds: number = 40
 ) => {
   const startTime = Date.now();
   while (!(await fn())) {
     const timeWaited = (Date.now() - startTime) / 1000;
-    if (timeWaited > timeout) {
+    if (timeWaited > timeoutSeconds) {
       throw new Error('Timed out before condition became true.');
     }
-    await delay(pollingInterval);
+    await delay(pollingIntervalSeconds);
   }
 };
