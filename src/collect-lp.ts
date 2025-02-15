@@ -204,6 +204,9 @@ export class LpCollector {
     const bucketIndex = parseInt(index.toString());
     const prevReward = this.lpMap.get(bucketIndex) ?? BigNumber.from('0');
     const sumReward = prevReward.add(rewardLp);
+    logger.info(
+      `Received LP Rewards in pool: ${this.pool.name}, bucketIndex: ${index}, rewardLp: ${rewardLp}`
+    );
     this.lpMap.set(bucketIndex, sumReward);
   }
 

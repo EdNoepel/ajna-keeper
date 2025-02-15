@@ -222,7 +222,7 @@ export async function kick({ pool, signer, config, loanToKick }: KickParams) {
 
     if (!bondApproved) {
       logger.info(
-        `Skipping kick of loan due to insufficient balance. pool: ${pool.name}, borrower: ${loanToKick.borrower}, bond: ${weiToDecimaled(liquidationBond)}`
+        `Failed to approve sufficient bond. Skipping kick of loan. pool: ${pool.name}, borrower: ${loanToKick.borrower}, bond: ${weiToDecimaled(liquidationBond)}`
       );
       return;
     }

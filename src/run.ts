@@ -131,7 +131,6 @@ async function collectLpRewardsLoop({
 
   while (true) {
     for (const poolConfig of poolsWithCollectLpSettings) {
-      const pool = poolMap.get(poolConfig.address)!;
       const collector = lpCollectors.get(poolConfig.address)!;
       await collector.collectLpRewards();
       await delay(config.delayBetweenActions);
