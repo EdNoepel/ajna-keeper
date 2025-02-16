@@ -1,11 +1,12 @@
 import { HARDHAT_RPC_URL, MAINNET_CONFIG } from './test-config';
 import { delay } from '../utils';
 import { JsonRpcProvider } from '../provider';
+import { NonceTracker } from '../nonce';
 
 export const getProvider = () => new JsonRpcProvider(HARDHAT_RPC_URL);
 
-export const resetHardhat = () =>
-  getProvider().send('hardhat_reset', [
+export const resetHardhat = async () => {
+  await getProvider().send('hardhat_reset', [
     {
       forking: {
         jsonRpcUrl: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
@@ -13,6 +14,8 @@ export const resetHardhat = () =>
       },
     },
   ]);
+  NonceTracker.clearNonces();
+};
 
 export const setBalance = (address: string, balance: string) =>
   getProvider().send('hardhat_setBalance', [address, balance]);
