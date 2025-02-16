@@ -18,6 +18,10 @@ import { BigNumber } from 'ethers';
 import { decimaledToWei, RequireFields, weiToDecimaled } from './utils';
 import { logger } from './logging';
 import { txSemaphore } from './tx-semaphore';
+import {
+  bucketRemoveCollateralToken,
+  bucketRemoveQuoteToken,
+} from './transactions';
 
 /**
  * Collects lp rewarded from BucketTakes without collecting the user's deposits or loans.
@@ -111,13 +115,7 @@ export class LpCollector {
             logger.debug(
               `Collecting LP reward as quote. pool: ${this.pool.name}`
             );
-            await txSemaphore.waitForTx(async () => {
-              const withdrawQuoteTx = await bucket.removeQuoteToken(
-                this.signer,
-                quoteToWithdraw
-              );
-              await withdrawQuoteTx.verifyAndSubmit();
-            }, this.signer);
+            await bucketRemoveQuoteToken(bucket, this.signer, quoteToWithdraw);
             logger.info(
               `Collected LP reward as quote. pool: ${this.pool.name}, amount: ${weiToDecimaled(quoteToWithdraw)}`
             );
@@ -143,13 +141,11 @@ export class LpCollector {
             logger.debug(
               `Collecting LP reward as collateral. pool ${this.pool.name}`
             );
-            await txSemaphore.waitForTx(async () => {
-              const withdrawCollateralTx = await bucket.removeQuoteToken(
-                this.signer,
-                collateralToWithdraw
-              );
-              await withdrawCollateralTx.verifyAndSubmit();
-            }, this.signer);
+            await bucketRemoveCollateralToken(
+              bucket,
+              this.signer,
+              collateralToWithdraw
+            );
             logger.info(
               `Collected LP reward as collateral. pool: ${this.pool.name}, token: ${this.pool.collateralSymbol}, amount: ${weiToDecimaled(collateralToWithdraw)}`
             );

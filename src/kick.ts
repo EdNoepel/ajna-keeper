@@ -17,6 +17,7 @@ import {
   weiToDecimaled,
 } from './utils';
 import { txSemaphore } from './tx-semaphore';
+import { poolKick, poolQuoteApprove } from './transactions';
 
 interface HandleKickParams {
   pool: FungiblePool;
@@ -179,10 +180,7 @@ async function approveBalanceForLoanToKick({
       logger.debug(
         `Approving quote. pool: ${pool.name}, amount: ${amountWithMargin}`
       );
-      await txSemaphore.waitForTx(async () => {
-        const tx = await pool.quoteApprove(signer, amountWithMargin);
-        await tx.verifyAndSubmit();
-      }, signer);
+      await poolQuoteApprove(pool, signer, amountWithMargin);
       logger.debug(
         `Approved quote. pool: ${pool.name}, amount: ${amountWithMargin}`
       );
@@ -232,10 +230,7 @@ export async function kick({ pool, signer, config, loanToKick }: KickParams) {
       limitPrice > 0
         ? pool.getBucketByPrice(decimaledToWei(limitPrice)).index
         : undefined;
-    await txSemaphore.waitForTx(async () => {
-      const kickTx = await pool.kick(signer, borrower, limitIndex);
-      await kickTx.verifyAndSubmit();
-    }, signer);
+    await poolKick(pool, signer, borrower, limitIndex);
     logger.info(
       `Kick transaction confirmed. pool: ${pool.name}, borrower: ${borrower}`
     );
@@ -262,10 +257,7 @@ async function clearAllowances({
   if (allowance > BigNumber.from('0')) {
     try {
       logger.debug(`Clearing allowance. pool: ${pool.name}`);
-      await txSemaphore.waitForTx(async () => {
-        const tx = await pool.quoteApprove(signer, BigNumber.from('0'));
-        await tx.verifyAndSubmit();
-      }, signer);
+      await poolQuoteApprove(pool, signer, BigNumber.from('0'));
       logger.debug(`Cleared allowance. pool: ${pool.name}`);
     } catch (error) {
       logger.error(`Failed to clear allowance. pool: ${pool.name}`, error);

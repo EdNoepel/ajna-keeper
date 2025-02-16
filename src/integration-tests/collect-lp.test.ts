@@ -23,6 +23,7 @@ import { LpCollector } from '../collect-lp';
 import { BigNumber, Wallet } from 'ethers';
 import { waitForConditionToBeTrue } from '../utils';
 import { getBalanceOfErc20 } from '../erc20';
+import { NonceTracker } from '../nonce';
 
 const setup = async () => {
   configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
@@ -220,6 +221,7 @@ describe('LpCollector collections', () => {
     );
     const settleTx = await liquidation.settle(signer);
     await settleTx.verifyAndSubmit();
+    await NonceTracker.getNonce(signer);
 
     const balanceBeforeCollection = await getBalanceOfErc20(
       signer,

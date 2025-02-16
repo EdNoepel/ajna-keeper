@@ -4,6 +4,7 @@ import { KeeperConfig, PoolConfig } from './config-types';
 import { logger } from './logging';
 import { weiToDecimaled } from './utils';
 import { txSemaphore } from './tx-semaphore';
+import { poolWithdrawBonds } from './transactions';
 
 interface CollectBondParams {
   pool: FungiblePool;
@@ -29,10 +30,7 @@ export async function collectBondFromPool({
         `Withdrawing bond. pool: ${pool.name}. bondSize: ${weiToDecimaled(claimable)}`
       );
       try {
-        await txSemaphore.waitForTx(async () => {
-          const withdrawTx = await pool.withdrawBonds(signer);
-          await withdrawTx.verifyAndSubmit();
-        }, signer);
+        await poolWithdrawBonds(pool, signer);
         logger.info(
           `Withdrew bond. pool: ${pool.name}. bondSize: ${weiToDecimaled(claimable)}`
         );
