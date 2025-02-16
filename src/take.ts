@@ -18,14 +18,19 @@ export async function handleArbTakes({
   poolConfig,
   config,
 }: HandleArbParams) {
-  const liquidationsToArbTake = await getLiquidationsToArbTake({
+  let liquidationsToArbTake = await getLiquidationsToArbTake({
     pool,
     poolConfig,
     config,
   });
-
   for (const liquidation of liquidationsToArbTake) {
-    await arbTakeLiquidation({ pool, poolConfig, signer, liquidation, config });
+    await arbTakeLiquidation({
+      pool,
+      poolConfig,
+      signer,
+      liquidation,
+      config,
+    });
     await delay(config.delayBetweenActions);
   }
 }
