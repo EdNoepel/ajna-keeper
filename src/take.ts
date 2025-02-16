@@ -3,6 +3,7 @@ import subgraph from './subgraph';
 import { delay, RequireFields, weiToDecimaled } from './utils';
 import { KeeperConfig, PoolConfig } from './config-types';
 import { logger } from './logging';
+import { txSemaphore } from './tx-semaphore';
 
 interface HandleArbParams {
   signer: Signer;
@@ -17,14 +18,19 @@ export async function handleArbTakes({
   poolConfig,
   config,
 }: HandleArbParams) {
-  const liquidationsToArbTake = await getLiquidationsToArbTake({
+  let liquidationsToArbTake = await getLiquidationsToArbTake({
     pool,
     poolConfig,
     config,
   });
-
   for (const liquidation of liquidationsToArbTake) {
-    await arbTakeLiquidation({ pool, poolConfig, signer, liquidation, config });
+    await arbTakeLiquidation({
+      pool,
+      poolConfig,
+      signer,
+      liquidation,
+      config,
+    });
     await delay(config.delayBetweenActions);
   }
 }
@@ -98,8 +104,10 @@ export async function arbTakeLiquidation({
         `Sending ArbTake Tx - poolAddress: ${pool.poolAddress}, borrower: ${borrower}, hpbIndex: ${hpbIndex}`
       );
       const liquidationSdk = pool.getLiquidation(borrower);
-      const arbTakeTx = await liquidationSdk.arbTake(signer, hpbIndex);
-      await arbTakeTx.verifyAndSubmit();
+      await txSemaphore.waitForTx(async () => {
+        const arbTakeTx = await liquidationSdk.arbTake(signer, hpbIndex);
+        await arbTakeTx.verifyAndSubmit();
+      }, signer);
       logger.info(
         `ArbTake successful - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
       );

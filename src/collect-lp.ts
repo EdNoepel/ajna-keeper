@@ -17,6 +17,7 @@ import {
 import { BigNumber } from 'ethers';
 import { decimaledToWei, RequireFields, weiToDecimaled } from './utils';
 import { logger } from './logging';
+import { txSemaphore } from './tx-semaphore';
 
 /**
  * Collects lp rewarded from BucketTakes without collecting the user's deposits or loans.
@@ -110,11 +111,13 @@ export class LpCollector {
             logger.debug(
               `Collecting LP reward as quote. pool: ${this.pool.name}`
             );
-            const withdrawQuoteTx = await bucket.removeQuoteToken(
-              this.signer,
-              quoteToWithdraw
-            );
-            await withdrawQuoteTx.verifyAndSubmit();
+            await txSemaphore.waitForTx(async () => {
+              const withdrawQuoteTx = await bucket.removeQuoteToken(
+                this.signer,
+                quoteToWithdraw
+              );
+              await withdrawQuoteTx.verifyAndSubmit();
+            }, this.signer);
             logger.info(
               `Collected LP reward as quote. pool: ${this.pool.name}, amount: ${weiToDecimaled(quoteToWithdraw)}`
             );
@@ -140,11 +143,13 @@ export class LpCollector {
             logger.debug(
               `Collecting LP reward as collateral. pool ${this.pool.name}`
             );
-            const withdrawCollateralTx = await bucket.removeQuoteToken(
-              this.signer,
-              collateralToWithdraw
-            );
-            await withdrawCollateralTx.verifyAndSubmit();
+            await txSemaphore.waitForTx(async () => {
+              const withdrawCollateralTx = await bucket.removeQuoteToken(
+                this.signer,
+                collateralToWithdraw
+              );
+              await withdrawCollateralTx.verifyAndSubmit();
+            }, this.signer);
             logger.info(
               `Collected LP reward as collateral. pool: ${this.pool.name}, token: ${this.pool.collateralSymbol}, amount: ${weiToDecimaled(collateralToWithdraw)}`
             );
@@ -199,6 +204,9 @@ export class LpCollector {
     const bucketIndex = parseInt(index.toString());
     const prevReward = this.lpMap.get(bucketIndex) ?? BigNumber.from('0');
     const sumReward = prevReward.add(rewardLp);
+    logger.info(
+      `Received LP Rewards in pool: ${this.pool.name}, bucketIndex: ${index}, rewardLp: ${rewardLp}`
+    );
     this.lpMap.set(bucketIndex, sumReward);
   }
 
