@@ -17,7 +17,6 @@ import {
 import { BigNumber } from 'ethers';
 import { decimaledToWei, RequireFields, weiToDecimaled } from './utils';
 import { logger } from './logging';
-import { txSemaphore } from './tx-semaphore';
 import {
   bucketRemoveCollateralToken,
   bucketRemoveQuoteToken,

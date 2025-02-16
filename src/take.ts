@@ -3,7 +3,6 @@ import subgraph from './subgraph';
 import { delay, RequireFields, weiToDecimaled } from './utils';
 import { KeeperConfig, PoolConfig } from './config-types';
 import { logger } from './logging';
-import { txSemaphore } from './tx-semaphore';
 import { liquidationArbTake } from './transactions';
 
 interface HandleArbParams {

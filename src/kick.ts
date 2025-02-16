@@ -16,7 +16,6 @@ import {
   tokenChangeDecimals,
   weiToDecimaled,
 } from './utils';
-import { txSemaphore } from './tx-semaphore';
 import { poolKick, poolQuoteApprove } from './transactions';
 
 interface HandleKickParams {

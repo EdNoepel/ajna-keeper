@@ -3,7 +3,6 @@ import { BigNumber } from 'ethers';
 import { KeeperConfig, PoolConfig } from './config-types';
 import { logger } from './logging';
 import { weiToDecimaled } from './utils';
-import { txSemaphore } from './tx-semaphore';
 import { poolWithdrawBonds } from './transactions';
 
 interface CollectBondParams {
