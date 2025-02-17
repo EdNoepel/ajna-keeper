@@ -1,13 +1,7 @@
-import './subgraph-mock';
 import { AjnaSDK, FungiblePool } from '@ajna-finance/sdk';
-import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
+import { Token, WETH9 } from '@uniswap/sdk-core';
 import { configureAjna, TokenToCollect } from '../config-types';
-import {
-  getProvider,
-  resetHardhat,
-  increaseTime,
-  impersonateSigner,
-} from './test-utils';
+import './subgraph-mock';
 import {
   makeGetLiquidationsFromSdk,
   makeGetLoansFromSdk,
@@ -24,6 +18,13 @@ import { BigNumber, Wallet } from 'ethers';
 import { waitForConditionToBeTrue } from '../utils';
 import { getBalanceOfErc20 } from '../erc20';
 import { NonceTracker } from '../nonce';
+import { MAINNET_CONFIG, USER1_MNEMONIC } from './test-config';
+import {
+  getProvider,
+  impersonateSigner,
+  increaseTime,
+  resetHardhat,
+} from './test-utils';
 
 const setup = async () => {
   configureAjna(MAINNET_CONFIG.AJNA_CONFIG);
@@ -83,7 +84,7 @@ describe('LpCollector subscription', () => {
           minAmount: 0,
         },
       },
-      {}
+      { wethAddress: MAINNET_CONFIG.WETH_ADDRESS }
     );
     await lpCollector.startSubscription();
     await handleArbTakes({
@@ -117,7 +118,7 @@ describe('LpCollector subscription', () => {
           minAmount: 0,
         },
       },
-      {}
+      { wethAddress: MAINNET_CONFIG.WETH_ADDRESS }
     );
     await lpCollector.startSubscription();
     const takerSigner = await impersonateSigner(
@@ -153,7 +154,7 @@ describe('LpCollector subscription', () => {
           minAmount: 0,
         },
       },
-      {}
+      { wethAddress: MAINNET_CONFIG.WETH_ADDRESS }
     );
     await lpCollector.startSubscription();
     await delay(5);
@@ -189,6 +190,7 @@ describe('LpCollector collections', () => {
     const signer = await impersonateSigner(
       MAINNET_CONFIG.SOL_WETH_POOL.collateralWhaleAddress2
     );
+
     const lpCollector = new LpCollector(
       pool,
       signer,
@@ -198,7 +200,7 @@ describe('LpCollector collections', () => {
           minAmount: 0,
         },
       },
-      {}
+      { wethAddress: MAINNET_CONFIG.WETH_ADDRESS }
     );
     await lpCollector.startSubscription();
     await handleArbTakes({
