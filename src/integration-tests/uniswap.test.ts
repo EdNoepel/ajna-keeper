@@ -14,8 +14,6 @@ import {
 import { addLiquidity } from './uniswap-helpers';
 import { expect } from 'chai';
 import { getPoolInfo, swapToWETH } from '../uniswap';
-import sinon from 'sinon';
-import { logger } from '../logging';
 
 const UNISWAP_V3_ROUTER = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 const NONFUNGIBLE_POSITION_MANAGER_ADDRESS =

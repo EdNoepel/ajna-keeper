@@ -22,25 +22,16 @@ import { logger } from './logging';
 import { NonceTracker } from './nonce';
 import { weiToDecimaled } from './utils';
 
-interface UniswapType {
-  getPoolInfo: any;
-  swapToWETH?: (
-    signer: Signer,
-    tokenToSwap: string,
-    amount: BigNumber,
-    feeAmount: FeeAmount,
-    wethAddress: string,
-    uniswapV3Router: string
-  ) => Promise<void>;
-}
-
 interface PoolInfo {
   sqrtPriceX96: BigNumber;
   liquidity: BigNumber;
   tick: number;
 }
 
-let Uniswap: UniswapType;
+const Uniswap = {
+  getPoolInfo,
+  swapToWETH,
+};
 
 export async function getPoolInfo(poolContract: Contract): Promise<PoolInfo> {
   const [liquidity, slot0] = await Promise.all([
@@ -247,7 +238,4 @@ export async function swapToWETH(
   }
 }
 
-export default Uniswap = {
-  getPoolInfo,
-  swapToWETH,
-};
+export default Uniswap;
