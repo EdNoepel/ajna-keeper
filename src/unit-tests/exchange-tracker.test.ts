@@ -14,7 +14,7 @@ describe('ExchangeTracker', () => {
 
   it('Collects tokens at the fee and clears entry after success.', async () => {
     const signer = Wallet.createRandom();
-    const swapToWethStub = sinon.stub(Uniswap, 'swapToWETH');
+    const swapToWethStub = sinon.stub(Uniswap, 'swapToWeth');
     const wethAddress = MAINNET_CONFIG.WETH_ADDRESS;
     const uniswapV3Router = MAINNET_CONFIG.UNISWAP_V3_ROUTER;
     const tokenToSwap = MAINNET_CONFIG.WBTC_USDC_POOL.collateralAddress;
@@ -42,7 +42,7 @@ describe('ExchangeTracker', () => {
   it('Tries to collect added tokens at the fee and clears entry after success.', async () => {
     const signer = Wallet.createRandom();
     const swapToWethStub = sinon
-      .stub(Uniswap, 'swapToWETH')
+      .stub(Uniswap, 'swapToWeth')
       .throws('Error msg does not matter.');
     const wethAddress = MAINNET_CONFIG.WETH_ADDRESS;
     const uniswapV3Router = MAINNET_CONFIG.UNISWAP_V3_ROUTER;

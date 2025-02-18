@@ -36,7 +36,7 @@ export class ExchangeTracker {
     for (const [key, amount] of nonZeroEntries) {
       try {
         const { token, fee } = keyToFeeToken(key);
-        await uniswap.swapToWETH(
+        await uniswap.swapToWeth(
           this.signer,
           token,
           amount,

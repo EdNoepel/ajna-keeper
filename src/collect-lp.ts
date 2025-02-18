@@ -19,7 +19,7 @@ import {
   bucketRemoveCollateralToken,
   bucketRemoveQuoteToken,
 } from './transactions';
-import { swapToWETH } from './uniswap';
+import { swapToWeth } from './uniswap';
 import { decimaledToWei, weiToDecimaled } from './utils';
 import { ExchangeTracker } from './exchange-tracker';
 

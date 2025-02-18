@@ -30,7 +30,7 @@ interface PoolInfo {
 
 const Uniswap = {
   getPoolInfo,
-  swapToWETH,
+  swapToWeth,
 };
 
 export async function getPoolInfo(poolContract: Contract): Promise<PoolInfo> {
@@ -46,7 +46,7 @@ export async function getPoolInfo(poolContract: Contract): Promise<PoolInfo> {
   };
 }
 
-export async function swapToWETH(
+export async function swapToWeth(
   signer: Signer,
   tokenToSwap: string,
   amountWad: BigNumber,
@@ -55,7 +55,7 @@ export async function swapToWETH(
   uniswapV3Router: string
 ) {
   if (!signer || !tokenToSwap || !amountWad || !feeAmount || !wethAddress) {
-    throw new Error('Invalid parameters provided to swapToWETH');
+    throw new Error('Invalid parameters provided to swapToWeth');
   }
   const provider = signer.provider;
   if (!provider) {

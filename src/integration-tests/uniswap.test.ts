@@ -13,7 +13,7 @@ import {
 } from './test-utils';
 import { addLiquidity } from './uniswap-helpers';
 import { expect } from 'chai';
-import { getPoolInfo, swapToWETH } from '../uniswap';
+import { getPoolInfo, swapToWeth } from '../uniswap';
 import { getBalanceOfErc20 } from '../erc20';
 import { decimaledToWei, tokenChangeDecimals, weiToDecimaled } from '../utils';
 
@@ -177,7 +177,7 @@ describe('Uniswap V3 Integration Tests', function () {
     );
     const amountToSwapWad = decimaledToWei(0.1, 18);
 
-    await swapToWETH(
+    await swapToWeth(
       wbtcSigner,
       wbtcToken.address,
       amountToSwapWad,
