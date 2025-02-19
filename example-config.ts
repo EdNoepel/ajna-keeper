@@ -13,8 +13,6 @@ const config: KeeperConfig = {
     'https://api.studio.thegraph.com/query/49479/ajna-base/version/latest',
   keeperKeystore: '/home/anon/keystore-files/keeper-keystore.json',
   multicallAddress: '0xcA11bde05977b3631167028862bE2a173976CA11',
-  wethAddress: '0x4200000000000000000000000000000000000006',
-  uniswapV3Router: '0x2626664c2603336E57B271c5C0b26F421741e481',
   multicallBlock: 5022,
   delayBetweenRuns: 15,
   delayBetweenActions: 1,
