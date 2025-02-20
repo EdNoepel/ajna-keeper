@@ -251,7 +251,7 @@ async function validateUniswapAddresses(config: KeeperConfig) {
       config.uniswapOverrides?.wethAddress
     );
     logger.info(
-      `Exchanging base rewards to ${weth.symbol}, address: ${weth.address}`
+      `Exchanging LP rewards to ${weth.symbol}, address: ${weth.address}`
     );
   }
 }

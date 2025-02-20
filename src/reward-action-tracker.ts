@@ -10,6 +10,7 @@ import uniswap from './uniswap';
 import { logger } from './logging';
 import { delay, tokenChangeDecimals, weiToDecimaled } from './utils';
 import { getDecimalsErc20, transferErc20 } from './erc20';
+import { FeeAmount } from '@uniswap/v3-sdk';
 
 export function deterministicJsonStringify(obj: any): string {
   // Note: this works fine as long as the object is not nested.
@@ -49,14 +50,7 @@ export class RewardActionTracker {
       KeeperConfig,
       'uniswapOverrides' | 'delayBetweenActions'
     >
-  ) {
-    // // TODO: Delete this code.
-    // this.addTokenToBeExchanged(
-    //   '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
-    //   BigNumber.from('12754893365431316'),
-    //   FeeAmount.LOW
-    // );
-  }
+  ) {}
 
   async handleAllTokens() {
     const nonZeroEntries = Array.from(this.feeTokenAmountMap.entries()).filter(
