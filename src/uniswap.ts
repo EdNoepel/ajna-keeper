@@ -24,6 +24,7 @@ import { logger } from './logging';
 import { NonceTracker } from './nonce';
 import { tokenChangeDecimals, weiToDecimaled } from './utils';
 import { approveErc20, getAllowanceOfErc20 } from './erc20';
+import { UniswapV3Overrides } from './config-types';
 
 interface PoolInfo {
   sqrtPriceX96: BigNumber;
@@ -47,22 +48,6 @@ export async function getPoolInfo(poolContract: Contract): Promise<PoolInfo> {
     sqrtPriceX96: slot0[0],
     tick: slot0[1],
   };
-}
-
-export function getUniswapV3RouterAddress(
-  chainId: number,
-  overrideAddress?: string
-) {
-  if (overrideAddress) {
-    return overrideAddress;
-  }
-  const uniswapV3Router = SWAP_ROUTER_02_ADDRESSES(chainId);
-  if (!uniswapV3Router) {
-    throw new Error(
-      'You must provide an address in the config for uniswapV3Router.'
-    );
-  }
-  return uniswapV3Router;
 }
 
 export async function getWethToken(
@@ -104,8 +89,7 @@ export async function swapToWeth(
   tokenAddress: string,
   amountWad: BigNumber,
   feeAmount: FeeAmount,
-  wethAddress?: string,
-  uniswapV3Router?: string
+  uniswapOverrides?: UniswapV3Overrides
 ) {
   if (!signer || !tokenAddress || !amountWad) {
     throw new Error('Invalid parameters provided to swapToWeth');
@@ -123,8 +107,13 @@ export async function swapToWeth(
     provider,
     tokenAddress
   );
-  const weth = await getWethToken(chainId, provider, wethAddress);
-  uniswapV3Router = getUniswapV3RouterAddress(chainId, uniswapV3Router);
+  const weth = await getWethToken(
+    chainId,
+    provider,
+    uniswapOverrides?.wethAddress
+  );
+  const uniswapV3Router =
+    uniswapOverrides?.uniswapV3Router ?? SWAP_ROUTER_02_ADDRESSES(chainId);
   const v3CoreFactorAddress = V3_CORE_FACTORY_ADDRESSES[chainId];
 
   const amount = tokenChangeDecimals(amountWad, 18, tokenToSwap.decimals);
