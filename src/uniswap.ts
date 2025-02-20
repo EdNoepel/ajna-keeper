@@ -2,6 +2,7 @@ import {
   CurrencyAmount,
   Percent,
   SWAP_ROUTER_02_ADDRESSES,
+  V3_CORE_FACTORY_ADDRESSES,
   Token,
   TradeType,
   WETH9,
@@ -52,11 +53,11 @@ export function getUniswapV3RouterAddress(
   chainId: number,
   overrideAddress?: string
 ) {
+  if (overrideAddress) {
+    return overrideAddress;
+  }
   const uniswapV3Router = SWAP_ROUTER_02_ADDRESSES(chainId);
   if (!uniswapV3Router) {
-    if (!!overrideAddress) {
-      return overrideAddress;
-    }
     throw new Error(
       'You must provide an address in the config for uniswapV3Router.'
     );
@@ -69,17 +70,14 @@ export async function getWethToken(
   provider: providers.Provider,
   overrideAddress?: string
 ) {
-  if (WETH9[chainId]) {
+  if (overrideAddress) {
+    return await getTokenFromAddress(chainId, provider, overrideAddress);
+  } else if (WETH9[chainId]) {
     return WETH9[chainId];
-  } else {
-    if (overrideAddress) {
-      return await getTokenFromAddress(chainId, provider, overrideAddress);
-    } else {
-      throw new Error(
-        'You must provide and address in the config for wethAddress.'
-      );
-    }
   }
+  throw new Error(
+    'You must provide and address in the config for wethAddress.'
+  );
 }
 
 export async function getTokenFromAddress(
@@ -109,7 +107,7 @@ export async function swapToWeth(
   wethAddress?: string,
   uniswapV3Router?: string
 ) {
-  if (!signer || !tokenAddress || !amountWad || !feeAmount || !wethAddress) {
+  if (!signer || !tokenAddress || !amountWad) {
     throw new Error('Invalid parameters provided to swapToWeth');
   }
   const provider = signer.provider;
@@ -127,6 +125,7 @@ export async function swapToWeth(
   );
   const weth = await getWethToken(chainId, provider, wethAddress);
   uniswapV3Router = getUniswapV3RouterAddress(chainId, uniswapV3Router);
+  const v3CoreFactorAddress = V3_CORE_FACTORY_ADDRESSES[chainId];
 
   const amount = tokenChangeDecimals(amountWad, 18, tokenToSwap.decimals);
 
@@ -164,7 +163,9 @@ export async function swapToWeth(
   const poolAddress = UniswapV3Pool.getAddress(
     tokenToSwap,
     weth,
-    FeeAmount.MEDIUM
+    feeAmount,
+    undefined,
+    v3CoreFactorAddress
   );
 
   const poolContract = new Contract(
@@ -176,10 +177,9 @@ export async function swapToWeth(
   try {
     await poolContract.slot0();
   } catch {
-    logger.info(
-      `Pool does not exist for ${tokenToSwap.symbol}/${weth.symbol}, skipping swap`
+    throw new Error(
+      `Pool does not exist for ${tokenToSwap.symbol}/${weth.symbol}, fee: ${feeAmount / 10000}%`
     );
-    return;
   }
 
   const poolInfo = await Uniswap.getPoolInfo(poolContract);

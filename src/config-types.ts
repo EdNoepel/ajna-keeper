@@ -163,7 +163,9 @@ export async function readConfigFile(filePath: string): Promise<KeeperConfig> {
   try {
     if (filePath.endsWith('.ts')) {
       const imported = await import('../' + filePath);
-      return imported.default;
+      const config = imported.default;
+      await validateUniswapAddresses(config);
+      return config;
     } else {
       const absolutePath = path.resolve(filePath);
       const fileContents = await fs.readFile(absolutePath, 'utf-8');
@@ -210,13 +212,15 @@ export function configureAjna(ajnaConfig: AjnaConfigParams): void {
 
 /** Throws error if it cannot find the UniswapV3Router and WETH9 token from uniswap's built in addresses or from the KeeperConfig. */
 async function validateUniswapAddresses(config: KeeperConfig) {
-  const poolsWithExchangeToWeth = config.pools.filter((poolConfig) => {
-    !!poolConfig.collectLpReward?.shouldExchangeRewardsToWeth;
-  });
+  const poolsWithExchangeToWeth = config.pools.filter(
+    (poolConfig) => !!poolConfig.collectLpReward?.shouldExchangeRewardsToWeth
+  );
   if (poolsWithExchangeToWeth.length > 0) {
     const provider = new JsonRpcProvider(config.ethRpcUrl);
     const { chainId } = await provider.getNetwork();
-    getUniswapV3RouterAddress(chainId, config.uniswapV3Router);
-    await getWethToken(chainId, provider, config.wethAddress);
+    const weth = await getWethToken(chainId, provider, config.wethAddress);
+    logger.info(
+      `Exchanging base rewards to ${weth.symbol}, address: ${weth.address}`
+    );
   }
 }

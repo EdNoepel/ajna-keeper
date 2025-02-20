@@ -46,12 +46,13 @@ export class ExchangeTracker {
         );
         this.removeTokenToBeExchanged(token, amount, fee);
         logger.info(
-          `Successfully exchanged token on Uniswap. token: ${token}, fee: ${fee / 1000}%, amount: ${weiToDecimaled(amount)}`
+          `Successfully exchanged token on Uniswap. token: ${token}, fee: ${fee / 10000}%, amount: ${weiToDecimaled(amount)}`
         );
         await delay(this.config.delayBetweenActions);
       } catch (error) {
         logger.error(
-          `Failed to exchange token on Uniswap. token-fee: ${key}, amount: ${amount}`
+          `Failed to exchange token on Uniswap. token-fee: ${key}, amount: ${weiToDecimaled(amount)}`,
+          error
         );
       }
     }
