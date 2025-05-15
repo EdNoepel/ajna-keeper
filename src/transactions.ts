@@ -17,11 +17,11 @@ import {
 import { Liquidation } from '@ajna-finance/sdk/dist/classes/Liquidation';
 
 export async function poolWithdrawBonds(pool: FungiblePool, signer: Signer) {
-  const address = await signer.getAddress();
-  try {
-    const contractPoolWithSigner = pool.contract.connect(signer);
-    const recipient = await signer.getAddress();
-    const nonce = await NonceTracker.getNonce(signer);
+  const contractPoolWithSigner = pool.contract.connect(signer);
+  const recipient = await signer.getAddress();
+  
+  // Use queueTransaction instead of manual nonce management
+  await NonceTracker.queueTransaction(signer, async (nonce) => {
     const tx = await withdrawBonds(
       contractPoolWithSigner,
       recipient,
@@ -30,11 +30,8 @@ export async function poolWithdrawBonds(pool: FungiblePool, signer: Signer) {
         nonce: nonce.toString(),
       }
     );
-    await tx.verifyAndSubmit();
-  } catch (error) {
-    NonceTracker.resetNonce(signer, address);
-    throw error;
-  }
+    return await tx.verifyAndSubmit();
+  });
 }
 
 export async function bucketRemoveQuoteToken(
@@ -42,21 +39,16 @@ export async function bucketRemoveQuoteToken(
   signer: Signer,
   maxAmount: BigNumber = MAX_UINT_256
 ) {
-  const address = await signer.getAddress();
-  try {
-    const contractPoolWithSigner = bucket.poolContract.connect(signer);
-    const nonce = await NonceTracker.getNonce(signer);
+  const contractPoolWithSigner = bucket.poolContract.connect(signer);
+  await NonceTracker.queueTransaction(signer, async (nonce) => {
     const tx = await removeQuoteToken(
       contractPoolWithSigner,
       maxAmount,
       bucket.index,
       { nonce: nonce.toString() }
     );
-    await tx.verifyAndSubmit();
-  } catch (error) {
-    NonceTracker.resetNonce(signer, address);
-    throw error;
-  }
+    return await tx.verifyAndSubmit();
+  });
 }
 
 export async function bucketRemoveCollateralToken(
@@ -64,21 +56,16 @@ export async function bucketRemoveCollateralToken(
   signer: Signer,
   maxAmount: BigNumber = MAX_UINT_256
 ) {
-  const address = await signer.getAddress();
-  try {
-    const contractPoolWithSigner = bucket.poolContract.connect(signer);
-    const nonce = await NonceTracker.getNonce(signer);
+  const contractPoolWithSigner = bucket.poolContract.connect(signer);
+  await NonceTracker.queueTransaction(signer, async (nonce) => {
     const tx = await removeCollateral(
       contractPoolWithSigner,
       bucket.index,
       maxAmount,
       { nonce: nonce.toString() }
     );
-    await tx.verifyAndSubmit();
-  } catch (error) {
-    NonceTracker.resetNonce(signer, address);
-    throw error;
-  }
+    return await tx.verifyAndSubmit();
+  });
 }
 
 export async function poolQuoteApprove(
@@ -86,12 +73,11 @@ export async function poolQuoteApprove(
   signer: Signer,
   allowance: BigNumber
 ) {
-  const address = await signer.getAddress();
-  try {
-    const denormalizedAllowance = allowance.div(
-      await quoteTokenScale(pool.contract)
-    );
-    const nonce = await NonceTracker.getNonce(signer);
+  const denormalizedAllowance = allowance.div(
+    await quoteTokenScale(pool.contract)
+  );
+  
+  await NonceTracker.queueTransaction(signer, async (nonce) => {
     const tx = await approve(
       signer,
       pool.poolAddress,
@@ -99,11 +85,8 @@ export async function poolQuoteApprove(
       denormalizedAllowance,
       { nonce: nonce.toString() }
     );
-    await tx.verifyAndSubmit();
-  } catch (error) {
-    NonceTracker.resetNonce(signer, address);
-    throw error;
-  }
+    return await tx.verifyAndSubmit();
+  });
 }
 
 export async function poolKick(
@@ -112,18 +95,13 @@ export async function poolKick(
   borrower: string,
   limitIndex: number = MAX_FENWICK_INDEX
 ) {
-  const address = await signer.getAddress();
-  try {
-    const contractPoolWithSigner = pool.contract.connect(signer);
-    const nonce = await NonceTracker.getNonce(signer);
+  const contractPoolWithSigner = pool.contract.connect(signer);
+  await NonceTracker.queueTransaction(signer, async (nonce) => {
     const tx = await kick(contractPoolWithSigner, borrower, limitIndex, {
       nonce: nonce.toString(),
     });
-    await tx.verifyAndSubmit();
-  } catch (error) {
-    NonceTracker.resetNonce(signer, address);
-    throw error;
-  }
+    return await tx.verifyAndSubmit();
+  });
 }
 
 export async function liquidationArbTake(
@@ -131,10 +109,8 @@ export async function liquidationArbTake(
   signer: Signer,
   bucketIndex: number
 ) {
-  const address = await signer.getAddress();
-  try {
-    const contractPoolWithSigner = liquidation.poolContract.connect(signer);
-    const nonce = await NonceTracker.getNonce(signer);
+  const contractPoolWithSigner = liquidation.poolContract.connect(signer);
+  await NonceTracker.queueTransaction(signer, async (nonce) => {
     const tx = await bucketTake(
       contractPoolWithSigner,
       liquidation.borrowerAddress,
@@ -144,9 +120,6 @@ export async function liquidationArbTake(
         nonce: nonce.toString(),
       }
     );
-    await tx.verifyAndSubmit();
-  } catch (error) {
-    NonceTracker.resetNonce(signer, address);
-    throw error;
-  }
+    return await tx.verifyAndSubmit();
+  });
 }
