@@ -3,7 +3,7 @@ import subgraph from './subgraph';
 import { decimaledToWei, delay, RequireFields, weiToDecimaled } from './utils';
 import { KeeperConfig, LiquiditySource, PoolConfig } from './config-types';
 import { logger } from './logging';
-import { liquidationArbTake } from './transactions';
+import { liquidationArbTake, liquidationTakeWithAtomicSwap } from './transactions';
 import { DexRouter } from './dex-router';
 import { BigNumber, ethers } from 'ethers';
 import { convertSwapApiResponseToDetailsBytes } from './1inch';
@@ -61,7 +61,7 @@ export async function handleTakes({
   }
 }
 
-interface LiquidationToTake {
+export interface LiquidationToTake {
   borrower: string;
   hpbIndex: number;
   collateral: BigNumber; // WAD
@@ -341,16 +341,15 @@ export async function takeLiquidation({
         logger.debug(
           `Sending Take Tx - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
         );
-        const tx = await keeperTaker.takeWithAtomicSwap(
-          pool.poolAddress,
-          liquidation.borrower,
-            liquidation.auctionPrice,
-          liquidation.collateral,
+        await liquidationTakeWithAtomicSwap(
+          keeperTaker,
+          signer,
+          pool,
+          liquidation,
           poolConfig.take.liquiditySource,
           dexRouter.getRouter(await signer.getChainId())!!,
           convertSwapApiResponseToDetailsBytes(swapData.data)
-        );
-        await tx.wait();
+        )
         logger.info(
           `Take successful - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
         );
