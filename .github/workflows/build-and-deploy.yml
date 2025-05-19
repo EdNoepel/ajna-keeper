@@ -1,0 +1,168 @@
+name: Build Docker image and deploy to Kubernetes cluster
+
+on:
+  push:
+    branches:
+      - master
+  
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build-Deploy
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_REGION: us-east-2
+      ECR_REPOSITORY: ajna-keeper-staging
+      CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+      NETWORK_NAME: ${{ secrets.NETWORK_NAME }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GA_OIDC_EKS_STAGING }}
+          role-session-name: AjnaKeeper
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Extract commit hash
+        id: vars
+        shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA_TAG: ${{ steps.vars.outputs.sha_short }}
+          LATEST_TAG: latest
+          ENVIRONMENT_TAG: staging
+        run: |
+          # Build a docker container and push it to ECR
+          echo "Building image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${SHA_TAG}"
+          docker build -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${SHA_TAG} \
+                       -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${LATEST_TAG} \
+                       -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${ENVIRONMENT_TAG} \
+                       -f Dockerfile \
+                       .
+          echo "Pushing image to ECR..."
+          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY} --all-tags
+          
+          # Set output variables for use in subsequent steps
+          echo "image=${ECR_REGISTRY}/${ECR_REPOSITORY}" >> $GITHUB_OUTPUT
+          echo "tag=${SHA_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Replace placeholders in config files
+        run: |
+          echo "Replacing {{CLUSTER_NAME}} with ${CLUSTER_NAME} in config files"
+          sed -i "s/{{CLUSTER_NAME}}/${CLUSTER_NAME}/g" deploy/staging/ajna-keeper.yaml
+          sed -i "s/{{CLUSTER_NAME}}/${CLUSTER_NAME}/g" deploy/staging/ajna-subgraph.yaml
+          
+          echo "Replacing {{NETWORK_NAME}} with ${NETWORK_NAME} in config files"
+          sed -i "s/{{NETWORK_NAME}}/${NETWORK_NAME}/g" deploy/staging/ajna-keeper.yaml
+          sed -i "s/{{NETWORK_NAME}}/${NETWORK_NAME}/g" deploy/staging/ajna-subgraph.yaml
+
+      - name: Update kubeconfig for EKS cluster
+        run: |
+          echo "Updating kubeconfig for EKS cluster ${CLUSTER_NAME}"
+          aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_REGION}
+
+      - name: Deploy subgraph to Kubernetes
+        run: |
+          echo "Deploying subgraph infrastructure to Kubernetes"
+          kubectl apply -f deploy/staging/ajna-subgraph.yaml -n ajna
+          
+          # Wait for all required pods to be ready
+          echo "Waiting for graph-node deployment to be ready..."
+          kubectl rollout status deployment/${NETWORK_NAME}-graph-node -n ajna --timeout=300s
+          
+          echo "Waiting for IPFS deployment to be ready..."
+          kubectl rollout status deployment/${NETWORK_NAME}-ipfs -n ajna --timeout=300s
+          
+          echo "Waiting for Postgres StatefulSet to be ready..."
+          kubectl rollout status statefulset/${NETWORK_NAME}-postgres -n ajna --timeout=300s
+          
+          # Verify pods are running before attempting port-forward
+          echo "Verifying pods are running..."
+          kubectl get pods -n ajna -l app=${NETWORK_NAME}-graph-node
+          kubectl get pods -n ajna -l app=${NETWORK_NAME}-ipfs
+          
+          # Deploy the subgraph definition
+          echo "Deploying subgraph definition"
+          
+          # Start port-forward for graph-node in background and capture PID
+          echo "Starting port-forward for graph-node..."
+          GRAPH_NODE_POD=$(kubectl get pods -n ajna -l app=${NETWORK_NAME}-graph-node -o jsonpath='{.items[0].metadata.name}')
+          kubectl port-forward -n ajna pod/$GRAPH_NODE_POD 8000:8000 8020:8020 &
+          GRAPH_NODE_PID=$!
+          
+          # Start port-forward for IPFS in background and capture PID
+          echo "Starting port-forward for IPFS..."
+          IPFS_POD=$(kubectl get pods -n ajna -l app=${NETWORK_NAME}-ipfs -o jsonpath='{.items[0].metadata.name}')
+          kubectl port-forward -n ajna pod/$IPFS_POD 5001:5001 &
+          IPFS_PID=$!
+          
+          # Wait for port-forwards to be ready
+          echo "Waiting for port-forwards to be ready..."
+          sleep 10
+          
+          # Clone the subgraph repository
+          echo "Cloning Ajna-subgraph repository..."
+          git clone https://github.com/BuiltByMom/Ajna-subgraph.git
+          cd Ajna-subgraph
+          
+          # Install Graph CLI globally and dependencies
+          echo "Installing Graph CLI and dependencies..."
+          yarn global add @graphprotocol/graph-cli
+          yarn install
+          
+          # Set ETH_NETWORK environment variable from Kubernetes secret
+          export ETH_NETWORK=$(kubectl get secret -n ajna ${NETWORK_NAME}-graph-node-secrets -o jsonpath='{.data.eth_network}' | base64 --decode)
+          
+          # Generate code and build subgraph
+          echo "Generating code and building subgraph for network ${NETWORK_NAME}..."
+          yarn codegen
+          yarn build --network ${NETWORK_NAME}
+          
+          # Check if graph-node is accessible
+          echo "Checking if graph-node is accessible..."
+          if curl -s http://localhost:8000/graphql > /dev/null; then
+            echo "Graph node is accessible, deploying subgraph..."
+            # Create and deploy subgraph
+            yarn create-local || echo "Subgraph may already exist, continuing..."
+            yarn deploy-local
+            echo "Subgraph deployment completed successfully"
+          else
+            echo "Failed to connect to graph-node, check port-forward and try again"
+            exit 1
+          fi
+          
+          # Kill port-forward processes
+          echo "Cleaning up port-forward processes..."
+          kill $GRAPH_NODE_PID || true
+          kill $IPFS_PID || true
+
+      - name: Deploy ajna-keeper to Kubernetes with Helm
+        uses: bitovi/github-actions-deploy-eks-helm@v1.2.9
+        with:
+          values: image.repository=${{ steps.build-image.outputs.image }},image.tag=${{ steps.build-image.outputs.tag }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
+          config-files: deploy/staging/ajna-keeper.yaml
+          chart-path: techops-services/common
+          namespace: ajna
+          timeout: 5m0s
+          name: ${{ env.NETWORK_NAME }}-ajna-keeper
+          chart-repository: https://techops-services.github.io/helm-charts
+          version: 0.0.37
+          atomic: true

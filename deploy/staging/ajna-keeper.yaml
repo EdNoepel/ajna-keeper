@@ -1,0 +1,106 @@
+replicaCount: 1
+
+service:
+  enabled: false
+
+deployment:
+  enabled: true
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values:
+          - on-demand
+
+image:
+  pullPolicy: Always
+
+# Liveness probe - checks if the application is running
+livenessProbe:
+  exec:
+    command:
+    - /bin/sh
+    - -c
+    - ps aux | grep "node.*index.ts" | grep -v grep
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Readiness probe - checks if the application is ready to serve requests
+readinessProbe:
+  exec:
+    command:
+    - /bin/sh
+    - -c
+    - ps aux | grep "node.*index.ts" | grep -v grep
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Environment variables
+env:
+  KEEPER_KEYSTORE:
+    type: "kv"
+    value: "/app/keystores/keeper-keystore.json"
+  CONF_GENERIC:
+    type: "parameterStore"
+    name: "conf-generic"
+    parameter_name: /eks/{{CLUSTER_NAME}}/ajna-keeper/{{NETWORK_NAME}}/configuration
+  KEYSTORE_FILE:
+    type: "parameterStore"
+    name: "keystore-file"
+    parameter_name: /eks/{{CLUSTER_NAME}}/ajna-keeper/keystore-file
+  KEYSTORE_PASSWORD:
+    type: "parameterStore"
+    name: "keystore-password"
+    parameter_name: /eks/{{CLUSTER_NAME}}/ajna-keeper/keystore-password
+  ONEINCH_API:
+    type: "parameterStore"
+    name: "oneinch-api"
+    parameter_name: /eks/{{CLUSTER_NAME}}/ajna-keeper/oneinch-api
+  ONEINCH_API_KEY:
+    type: "parameterStore"
+    name: "oneinch-apikey"
+    parameter_name: /eks/{{CLUSTER_NAME}}/ajna-keeper/oneinch-apikey
+
+externalSecrets:
+  clusterSecretStoreName: {{CLUSTER_NAME}}
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Security context
+# securityContext:
+#   runAsNonRoot: true
+#   runAsUser: 1000
+#   runAsGroup: 1000
+#   fsGroup: 1000
+
+# Pod annotations
+podAnnotations: {}
+
+# Labels
+labels: {}
+
+# Selector labels
+selectorLabels: {}
+
+# Autoscaling
+autoscaling:
+  enabled: false
+
+# Service account
+serviceAccount:
+  create: false
