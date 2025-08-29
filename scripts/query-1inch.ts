@@ -7,7 +7,7 @@ import { promises as fs } from 'fs';
 import { exit } from 'process';
 
 import { configureAjna, readConfigFile } from "../src/config-types";
-import { approveErc20, getAllowanceOfErc20, transferErc20 } from '../src/erc20';
+import { approveErc20, getAllowanceOfErc20, getDecimalsErc20, transferErc20 } from '../src/erc20';
 import { DexRouter } from '../src/dex-router';
 import { getProviderAndSigner } from '../src/utils';
 import { convertSwapApiResponseToDetailsBytes } from '../src/1inch';
@@ -30,7 +30,7 @@ const argv = yargs(process.argv.slice(2))
       type: 'string',
       demandOption: true,
       describe: 'Action to perform',
-      choices: ['approve', 'deploy', 'quote', 'send', 'swap'],
+      choices: ['approve', 'deploy', 'quote', 'send', 'swap', 'recover'],
     },
     amount: {
       type: 'number',
@@ -72,13 +72,24 @@ async function main() {
   configureAjna(config.ajna);
   const ajna = new AjnaSDK(provider);
   const pool: FungiblePool = await ajna.fungiblePoolFactory.getPoolByAddress(poolConfig.address);
-
   console.log('Found pool on chain', chainId, 'quoting', pool.collateralAddress, 'in', pool.quoteAddress)
+
+  if (argv.action ==='recover' && pool && config.keeperTaker) {
+    const keeperTaker = AjnaKeeperTaker__factory.connect(config.keeperTaker, signer);
+    const tx = await keeperTaker.recover(pool.quoteAddress);
+    console.log('Recovery transaction hash:', tx.hash);
+    await tx.wait();
+    console.log('Recovery transaction confirmed');
+
+    exit(0);
+  }
+
   const dexRouter = new DexRouter(signer, {
     oneInchRouters: config?.oneInchRouters ?? {},
     connectorTokens: config?.connectorTokens ?? [],
   });
-  const amount = ethers.utils.parseEther(argv.amount!!.toString());
+  const collateralDecimals = await getDecimalsErc20(signer, pool.collateralAddress);
+  const amount = ethers.utils.parseUnits(argv.amount!!.toString(), collateralDecimals);
 
   if (argv.action === 'approve' && pool && dexRouter) {
     // 1inch API will error out if approval not run before calling API
@@ -108,6 +119,7 @@ async function main() {
     );
     console.log('Quote:', quote);
 
+  // Sends collateral to AjnaKeeperTaker; useful for testing swap without an auction
   } else if (argv.action === 'send' && pool && config.keeperTaker) {
     try {
       console.log('Sending', amount.toString(), 'to keeperTaker at', config.keeperTaker);
@@ -135,9 +147,9 @@ async function main() {
         convertSwapApiResponseToDetailsBytes(swapData.data),
         amount.mul(9).div(10), // 90% of the amount
       );
-      console.log('Transaction hash:', tx.hash);
+      console.log('Swap transaction hash:', tx.hash);
       await tx.wait();
-      console.log('Transaction confirmed');
+      console.log('Swap transaction confirmed');
     }
 
   } else {
