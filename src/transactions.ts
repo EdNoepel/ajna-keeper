@@ -1,4 +1,4 @@
-import { FungiblePool, Signer } from '@ajna-finance/sdk';
+import { createTransaction, FungiblePool, Signer } from '@ajna-finance/sdk';
 import {
   removeQuoteToken,
   withdrawBonds,
@@ -6,7 +6,7 @@ import {
   kick,
   bucketTake,
 } from '@ajna-finance/sdk/dist/contracts/pool';
-import { BigNumber } from 'ethers';
+import { BigNumber, BytesLike } from 'ethers';
 import { MAX_FENWICK_INDEX, MAX_UINT_256 } from './constants';
 import { NonceTracker } from './nonce';
 import { Bucket } from '@ajna-finance/sdk/dist/classes/Bucket';
@@ -15,6 +15,9 @@ import {
   approve,
 } from '@ajna-finance/sdk/dist/contracts/erc20-pool';
 import { Liquidation } from '@ajna-finance/sdk/dist/classes/Liquidation';
+import { AjnaKeeperTaker } from '../typechain-types';
+import { LiquiditySource } from './config-types';
+import { LiquidationToTake } from './take';
 
 export async function poolWithdrawBonds(pool: FungiblePool, signer: Signer) {
   const address = await signer.getAddress();
@@ -140,6 +143,43 @@ export async function liquidationArbTake(
       liquidation.borrowerAddress,
       false,
       bucketIndex,
+      {
+        nonce: nonce.toString(),
+      }
+    );
+    await tx.verifyAndSubmit();
+  } catch (error) {
+    NonceTracker.resetNonce(signer, address);
+    throw error;
+  }
+}
+
+export async function liquidationTakeWithAtomicSwap(
+  keeperTaker: AjnaKeeperTaker,
+  signer: Signer,
+  pool: FungiblePool,
+  liquidation: LiquidationToTake,
+  liquiditySource: LiquiditySource,
+  routerAddress: string,
+  swapDetails: BytesLike
+) {
+  const address = await signer.getAddress();
+  try {
+    const nonce = await NonceTracker.getNonce(signer);
+    const tx = await createTransaction(
+      keeperTaker,
+      {
+        methodName: 'takeWithAtomicSwap',
+        args: [
+          pool.poolAddress,
+          liquidation.borrower,
+            liquidation.auctionPrice,
+          liquidation.collateral,
+          liquiditySource,
+          routerAddress,
+          swapDetails,
+        ],
+      },
       {
         nonce: nonce.toString(),
       }

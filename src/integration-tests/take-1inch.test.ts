@@ -275,14 +275,14 @@ describe('Take with 1inch Integration', () => {
         signer,
         config: {
           subgraphUrl: '',
-          oneInchRouters: { 1: '0x1111111254EEB25477B68fb85Ed929f73A960582' },
+          oneInchRouters: { 31337: '0x1111111254EEB25477B68fb85Ed929f73A960582' },
           connectorTokens: [],
           delayBetweenActions: 1,
         },
       })
     );
     expect(liquidations.length).to.equal(1);
-    expect(liquidations[0].takeStrategy).to.equal(1);
+    expect(liquidations[0].isTakeable).to.equal(true);
 
     await takeLiquidation({
       pool,
@@ -298,7 +298,7 @@ describe('Take with 1inch Integration', () => {
       liquidation: liquidations[0],
       config: {
         dryRun: false,
-        oneInchRouters: { 1: '0x1111111254EEB25477B68fb85Ed929f73A960582' },
+        oneInchRouters: { 31337: '0x1111111254EEB25477B68fb85Ed929f73A960582' },
         connectorTokens: [],
         keeperTaker: keeperTakerAddress,
         delayBetweenActions: 1,
@@ -371,7 +371,7 @@ describe('Take with 1inch Integration', () => {
         signer,
         config: {
           subgraphUrl: '',
-          oneInchRouters: { 1: '0x1111111254EEB25477B68fb85Ed929f73A960582' },
+          oneInchRouters: { 31337: '0x1111111254EEB25477B68fb85Ed929f73A960582' },
           connectorTokens: [],
           delayBetweenActions: 1,
         },
@@ -395,7 +395,7 @@ describe('Take with 1inch Integration', () => {
       liquidation: liquidations[0],
       config: {
         dryRun: false,
-        oneInchRouters: { 1: '0x1111111254EEB25477B68fb85Ed929f73A960582' },
+        oneInchRouters: { 31337: '0x1111111254EEB25477B68fb85Ed929f73A960582' },
         connectorTokens: [],
         keeperTaker: keeperTakerAddress,
         delayBetweenActions: 1,
