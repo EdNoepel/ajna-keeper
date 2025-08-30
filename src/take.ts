@@ -1,6 +1,6 @@
 import { Signer, FungiblePool } from '@ajna-finance/sdk';
 import subgraph from './subgraph';
-import { decimaledToWei, delay, RequireFields, weiToDecimaled } from './utils';
+import { decimaledToWei, delay, RequireFields, tokenChangeDecimals, weiToDecimaled } from './utils';
 import { KeeperConfig, LiquiditySource, PoolConfig } from './config-types';
 import { logger } from './logging';
 import { liquidationArbTake, liquidationTakeWithAtomicSwap } from './transactions';
@@ -128,7 +128,7 @@ async function checkIfArbTakeable(
 async function checkIfTakeable(
   pool: FungiblePool,
   price: number,
-  collateral: BigNumber,
+  collateralWad: BigNumber,
   poolConfig: RequireFields<PoolConfig, 'take'>,
   config: Pick<KeeperConfig, 'delayBetweenActions'>,
   signer: Signer,
@@ -142,9 +142,9 @@ async function checkIfTakeable(
     return { isTakeable: false };
   }
 
-  if (!collateral.gt(0)) {
+  if (!collateralWad.gt(0)) {
     logger.debug(
-      `Invalid collateral amount: ${collateral.toString()} for pool ${pool.name}`
+      `Invalid collateral amount: ${collateralWad.toString()} for pool ${pool.name}`
     );
     return { isTakeable: false };
   }
@@ -161,6 +161,13 @@ async function checkIfTakeable(
     // Pause between getting a quote for each liquidation to avoid 1inch rate limit
     await delay(config.delayBetweenActions);
 
+    // Convert to token precision for interacting with 1inch
+    const collateralDecimals = await getDecimalsErc20(
+      signer,
+      pool.collateralAddress
+    );
+    const collateral = tokenChangeDecimals(collateralWad, 18, collateralDecimals);
+
     const dexRouter = new DexRouter(signer, {
       oneInchRouters: oneInchRouters ?? {},
       connectorTokens: connectorTokens ?? [],
@@ -174,7 +181,7 @@ async function checkIfTakeable(
 
     if (!quoteResult.success) {
       logger.debug(
-        `No valid quote data for collateral ${ethers.utils.formatUnits(collateral, await getDecimalsErc20(signer, pool.collateralAddress))} in pool ${pool.name}: ${quoteResult.error}`
+        `No valid quote data for collateral ${ethers.utils.formatUnits(collateralWad, await getDecimalsErc20(signer, pool.collateralAddress))} in pool ${pool.name}: ${quoteResult.error}`
       );
       return { isTakeable: false };
     }
@@ -182,24 +189,19 @@ async function checkIfTakeable(
     const amountOut = ethers.BigNumber.from(quoteResult.dstAmount);
     if (amountOut.isZero()) {
       logger.debug(
-        `Zero amountOut for collateral ${ethers.utils.formatUnits(collateral, await getDecimalsErc20(signer, pool.collateralAddress))} in pool ${pool.name}`
+        `Zero amountOut for collateral ${ethers.utils.formatUnits(collateralWad, await getDecimalsErc20(signer, pool.collateralAddress))} in pool ${pool.name}`
       );
       return { isTakeable: false };
     }
 
-    const collateralDecimals = await getDecimalsErc20(
-      signer,
-      pool.collateralAddress
-    );
+    // Calculate market price from DEX and price at which auction is takeable based upon configuration
     const quoteDecimals = await getDecimalsErc20(signer, pool.quoteAddress);
-
-    const collateralAmount = Number(
-      ethers.utils.formatUnits(collateral, collateralDecimals)
-    );
     const quoteAmount = Number(
       ethers.utils.formatUnits(amountOut, quoteDecimals)
     );
-
+    const collateralAmount = Number(
+      ethers.utils.formatUnits(collateral, collateralDecimals)
+    );
     const marketPrice = quoteAmount / collateralAmount;
     const takeablePrice = marketPrice * poolConfig.take.marketPriceFactor;
 
@@ -323,13 +325,15 @@ export async function takeLiquidation({
 
       // pause between getting the 1inch quote and requesting the swap to avoid 1inch rate limit
       await delay(config.delayBetweenActions);
+      const collateralDecimals = await getDecimalsErc20(signer, pool.collateralAddress);
+
       const dexRouter = new DexRouter(signer, {
         oneInchRouters: config.oneInchRouters ?? {},
         connectorTokens: config.connectorTokens ?? [],
       });
       const swapData = await dexRouter.getSwapDataFromOneInch(
         await signer.getChainId(),
-        liquidation.collateral,
+        tokenChangeDecimals(liquidation.collateral, 18, collateralDecimals),
         pool.collateralAddress,
         pool.quoteAddress,
         1,
@@ -348,7 +352,7 @@ export async function takeLiquidation({
           liquidation,
           poolConfig.take.liquiditySource,
           dexRouter.getRouter(await signer.getChainId())!!,
-          convertSwapApiResponseToDetailsBytes(swapData.data)
+          convertSwapApiResponseToDetailsBytes(swapData.data),
         )
         logger.info(
           `Take successful - poolAddress: ${pool.poolAddress}, borrower: ${borrower}`
